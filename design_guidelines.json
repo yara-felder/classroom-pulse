@@ -1,0 +1,214 @@
+{
+  "project_title": "Classroom Pulse & Behavior Support Hub",
+  "app_type": "dashboard",
+  "archetype": "ORGANIC_WARMTH_AND_TACTICAL_CLARITY",
+  "emotional_tone": "Supportive, calm, precise, and encouraging for K-12 educators and students.",
+  "theme": "light",
+  "typography": {
+    "font_family_heading": "Outfit, sans-serif",
+    "font_family_body": "Plus Jakarta Sans, sans-serif",
+    "font_family_accent": "Fredoka, sans-serif",
+    "google_fonts_import": "https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
+    "sizes": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-lg sm:text-xl font-semibold tracking-tight",
+      "h4": "text-base sm:text-lg font-medium tracking-normal",
+      "body": "text-sm sm:text-base leading-relaxed",
+      "caption": "text-xs font-medium tracking-wide text-slate-500 uppercase"
+    }
+  },
+  "colors": {
+    "background": "#FAFAF7",
+    "surface": "#FFFFFF",
+    "surface_secondary": "#F3F4F0",
+    "border": "#E2E8F0",
+    "border_highlight": "#CBD5E1",
+    "text_primary": "#0F172A",
+    "text_secondary": "#475569",
+    "text_muted": "#64748B",
+    "primary_brand": "#0D9488",
+    "primary_brand_hover": "#0F766E",
+    "positive_emerald": {
+      "bg": "#ECFDF5",
+      "border": "#A7F3D0",
+      "text": "#047857",
+      "button_bg": "#10B981",
+      "button_hover": "#059669",
+      "button_text": "#FFFFFF"
+    },
+    "needs_support_amber": {
+      "bg": "#FFFBEB",
+      "border": "#FDE68A",
+      "text": "#B45309",
+      "button_bg": "#F59E0B",
+      "button_hover": "#D97706",
+      "button_text": "#FFFFFF"
+    },
+    "quick_log_indigo": {
+      "bg": "#EEF2FF",
+      "border": "#C7D2FE",
+      "text": "#4338CA",
+      "button_bg": "#6366F1",
+      "button_hover": "#4F46E5",
+      "button_text": "#FFFFFF"
+    },
+    "neutral_pill": {
+      "bg": "#F1F5F9",
+      "border": "#E2E8F0",
+      "text": "#334155"
+    }
+  },
+  "visual_enhancers": {
+    "card_style": "bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden relative",
+    "topbar_style": "sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3.5",
+    "bottom_nav_style": "fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] px-4 py-2.5",
+    "positive_button": "bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-semibold rounded-xl transition-all flex items-center justify-center shadow-sm hover:shadow-emerald-200",
+    "support_button": "bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold rounded-xl transition-all flex items-center justify-center shadow-sm hover:shadow-amber-200",
+    "quick_log_button": "bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-medium rounded-xl transition-all border border-slate-300/80 flex items-center justify-center gap-1.5"
+  },
+  "grids_and_layouts": {
+    "main_container": "min-h-screen bg-[#FAFAF7] text-slate-900 font-sans pb-28 pt-2",
+    "student_grid": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 px-4 sm:px-8 max-w-7xl mx-auto",
+    "roster_grid": "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 px-4 sm:px-8 max-w-7xl mx-auto",
+    "analytics_grid": "grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 sm:px-8 max-w-7xl mx-auto",
+    "resources_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-8 max-w-7xl mx-auto"
+  },
+  "key_features_and_modalities": [
+    {
+      "feature": "Top Navigation Bar",
+      "details": "Displays Oakridge Elementary School Logo, interactive Class Section Dropdown ('3rd Grade - Period 2 Math', '4th Grade - Period 1 Science', '5th Grade - Homeroom 5B'), Live Time/Date indicator, and Teacher Profile trigger (Ms. Sarah Jenkins, 3rd Grade Lead) with dropdown options."
+    },
+    {
+      "feature": "View Mode Toggle (Simple vs Detailed)",
+      "details": "Toggle switch located in the main header area. 'Simple View' displays compact student cards with quick feedback score counters and big action buttons. 'Detailed Behavior Mode' expands cards to reveal recent behavior tags (e.g., 'Active Listener', 'Peer Helper', 'Needs Focus'), notes, emotional status indicators, and recent timeline logs."
+    },
+    {
+      "feature": "Per-Card Quick Action System",
+      "details": "Green '+' button triggers Positive Skill / Connected dialog with selectable skill badges ('Participation', 'Teamwork', 'Kindness', 'Focus', 'Problem Solver') with +1 animation effect and Sonner toast notification. Orange '!' button triggers Needs Support dialog with selectable behavioral guidance tags ('Off Task', 'Disruptive', 'Needs Break', 'Unprepared') with empathy-focused intervention suggestions. 'Quick Log' opens instant note logger with tag selector, timestamp, and optional parent notification flag."
+    },
+    {
+      "feature": "Bottom Navigation Bar",
+      "details": "Floating bottom bar with 4 core views: 1. Home (Main classroom live scoring dashboard with class summary stats), 2. Class Roster (Searchable, filterable student roster with contact details & IEP indicators), 3. Analytics (Behavior trends, positive vs support ratio charts, period comparison, student highlights), 4. Resources (Curated teacher toolkits, calming strategies, PBIS behavior matrices, downloadable printable passes)."
+    },
+    {
+      "feature": "Interactive Modals & Toast Feedback",
+      "details": "Modal dialogs for logging behavior, filter controls, individual student profile deep dives, quick student add/edit, and instant toast feedback using Sonner."
+    }
+  ],
+  "image_urls": {
+    "school_logo": "https://images.unsplash.com/photo-1580854603440-7843d2c3bad6?crop=entropy&cs=srgb&fm=jpg&w=150&q=80",
+    "teacher_avatar": "https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+    "students": [
+      {
+        "id": "std-1",
+        "name": "Maya Lin",
+        "avatar": "https://images.unsplash.com/photo-1557457088-c5e2c380fd9b?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "grade": "3rd Grade",
+        "points": 14,
+        "support_count": 1,
+        "recent_tag": "Great Problem Solver",
+        "status": "Connected"
+      },
+      {
+        "id": "std-2",
+        "name": "Lucas Rodriguez",
+        "avatar": "https://images.pexels.com/photos/5211432/pexels-photo-5211432.jpeg?auto=compress&cs=tinysrgb&w=200",
+        "grade": "3rd Grade",
+        "points": 18,
+        "support_count": 0,
+        "recent_tag": "Active Peer Helper",
+        "status": "Thriving"
+      },
+      {
+        "id": "std-3",
+        "name": "Aaliyah Johnson",
+        "avatar": "https://images.unsplash.com/photo-1580854603440-7843d2c3bad6?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "grade": "3rd Grade",
+        "points": 9,
+        "support_count": 3,
+        "recent_tag": "Needs Focus",
+        "status": "Needs Guidance"
+      },
+      {
+        "id": "std-4",
+        "name": "Ethan Chen",
+        "avatar": "https://images.unsplash.com/photo-1639432040713-d681d3b208b6?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "grade": "3rd Grade",
+        "points": 12,
+        "support_count": 1,
+        "recent_tag": "Kindness Champion",
+        "status": "Connected"
+      },
+      {
+        "id": "std-5",
+        "name": "Noah Williams",
+        "avatar": "https://images.pexels.com/photos/10646608/pexels-photo-10646608.jpeg?auto=compress&cs=tinysrgb&w=200",
+        "grade": "3rd Grade",
+        "points": 16,
+        "support_count": 0,
+        "recent_tag": "Super Reader",
+        "status": "Thriving"
+      },
+      {
+        "id": "std-6",
+        "name": "Sophia Patel",
+        "avatar": "https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
+        "grade": "3rd Grade",
+        "points": 11,
+        "support_count": 2,
+        "recent_tag": "Self-Regulation Break",
+        "status": "Resetting"
+      }
+    ]
+  },
+  "testing_attributes": {
+    "mandatory_rule": "ALL interactive and critical elements must have unique kebab-case data-testid attributes.",
+    "key_test_ids": [
+      "school-logo-brand",
+      "class-section-select",
+      "teacher-profile-button",
+      "view-mode-toggle",
+      "view-mode-simple",
+      "view-mode-detailed",
+      "class-summary-bar",
+      "student-search-input",
+      "student-card-{studentId}",
+      "positive-btn-{studentId}",
+      "needs-support-btn-{studentId}",
+      "quick-log-btn-{studentId}",
+      "student-points-badge-{studentId}",
+      "student-detail-trigger-{studentId}",
+      "modal-positive-skill-dialog",
+      "modal-needs-support-dialog",
+      "modal-quick-log-dialog",
+      "submit-skill-btn",
+      "submit-support-btn",
+      "submit-quick-log-btn",
+      "nav-home",
+      "nav-roster",
+      "nav-analytics",
+      "nav-resources",
+      "analytics-filter-range",
+      "resource-card-{resourceId}"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Load Google Fonts ('Outfit', 'Plus Jakarta Sans', 'Fredoka') in index.html or top-level CSS.",
+    "Strictly follow light theme palette: Warm off-white background (#FAFAF7) with slate text and emerald/amber feedback actions.",
+    "Implement state persistence for student points, log entries, and active view tab so actions feel responsive and real.",
+    "Ensure both Simple View and Detailed Behavior Mode offer clear visual distinctions: Simple view is streamlined for quick point taping during active teaching; Detailed mode presents behavior tags, emotional check-ins, recent timeline history, and notes.",
+    "Include a filter/search bar at the top of the student grid (filter by all, positive streak, needs check-in, alphabetical).",
+    "In Analytics view, use clean visual chart bars or SVG graphs depicting daily positive vs support behavior logs and individual student growth.",
+    "In Resources view, provide downloadable/printable card representations for PBIS rewards, calming corner passes, and teacher strategies.",
+    "Add Sonner toast triggers for every positive feedback (+1 Connected), support check-in (! Logged), and quick log entry.",
+    "Ensure total mobile and desktop responsiveness: Bottom navigation remains accessible and clear on mobile and desktop viewports."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Do NOT use generic purple/violet gradient styling or default Inter/Roboto fonts.",
+    "Ensure high contrast on buttons and text labels according to APCA/WCAG standards.",
+    "Include smooth framer-motion micro-interactions (hover, active press scale, badge pulse animation upon score increment).",
+    "Never use transparent backgrounds without backdrop blur for sticky header or floating bottom nav.",
+    "Include mandatory data-testid attributes on all interactive elements for robust automation test coverage."
+  ]
+}

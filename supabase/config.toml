@@ -1,0 +1,4 @@
+project_id = "ttsutwxpnrckvsuzkhmj"
+
+[functions.send-digest]
+verify_jwt = true
