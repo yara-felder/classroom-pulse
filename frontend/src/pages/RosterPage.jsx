@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Search, Mail, GraduationCap, Plus, Shield, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,8 @@ export default function RosterPage() {
   const list = periodStudents.filter((s) =>
     s.name.toLowerCase().includes(q.toLowerCase())
   );
+
+  if (role === "admin") return <Navigate to="/" replace />;
 
   return (
     <div className="pt-6 pb-4 px-4 sm:px-8 max-w-7xl mx-auto">

@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { Home, Users, BarChart3, BookMarked, Mail } from "lucide-react";
+import { useClassroom } from "@/context/ClassroomContext";
 
 const items = [
   { to: "/", label: "Home", icon: Home, testid: "nav-home", end: true },
@@ -11,13 +12,15 @@ const items = [
 ];
 
 export const BottomNav = () => {
+  const { role } = useClassroom();
+  const visible = role === "admin" ? items.filter((item) => item.to !== "/roster" && item.to !== "/digest") : items;
   return (
     <nav
       data-testid="bottom-nav"
       className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
     >
       <div className="max-w-2xl mx-auto flex items-center justify-around px-1 sm:px-2 py-2 gap-0.5">
-        {items.map(({ to, label, icon: Icon, testid, end }) => (
+        {visible.map(({ to, label, icon: Icon, testid, end }) => (
           <NavLink
             key={to}
             to={to}

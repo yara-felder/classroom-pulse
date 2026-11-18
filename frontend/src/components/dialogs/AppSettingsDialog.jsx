@@ -50,7 +50,7 @@ const ModePicker = ({ value, onChange }) => (
   </div>
 );
 
-export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest" }) => {
+export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", focusSection = "" }) => {
   const { digestSettings, updateDigestSettings, pointSettings, updatePointSettings, privacySettings, updatePrivacySettings, role, students } = useClassroom();
   const [draft, setDraft] = useState(digestSettings);
   const [pointDraft, setPointDraft] = useState(pointSettings);
@@ -69,7 +69,14 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest" })
   const set = (k) => (v) => setDraft((d) => ({ ...d, [k]: v }));
   const setPoint = (k) => (v) => setPointDraft((d) => ({ ...d, [k]: v }));
 
+  const isAdmin = role === "admin";
+  const activeTab = isAdmin ? "school" : initialTab;
+
   const save = () => {
+    if (isAdmin) {
+      onOpenChange(false);
+      return;
+    }
     if (!draft.time) {
       toast.error("Choose a dispatch time.");
       return;
@@ -100,32 +107,47 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest" })
           <DialogTitle className="flex items-center gap-2" style={{ fontFamily: "Outfit" }}>
             <Settings className="w-5 h-5 text-teal-600" /> App Settings
           </DialogTitle>
-          <DialogDescription>Configure how Classroom Pulse works for your classes.</DialogDescription>
+          <DialogDescription>
+            {isAdmin
+              ? "Invite teachers and case managers into your school."
+              : "Configure how Classroom Pulse works for your classes."}
+          </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue={initialTab}>
-          <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="digest" data-testid="settings-tab-digest">
-              <Mail className="w-4 h-4 mr-1.5" /> Digest
-            </TabsTrigger>
-            <TabsTrigger value="points" data-testid="settings-tab-points">
-              <Coins className="w-4 h-4 mr-1.5" /> Points
-            </TabsTrigger>
-            <TabsTrigger value="privacy" data-testid="settings-tab-privacy">
-              <Lock className="w-4 h-4 mr-1.5" /> Privacy
-            </TabsTrigger>
+        <Tabs defaultValue={activeTab}>
+          <TabsList className={isAdmin ? "w-fit" : "w-full grid grid-cols-4"}>
+            {!isAdmin && (
+              <TabsTrigger value="digest" data-testid="settings-tab-digest">
+                <Mail className="w-4 h-4 mr-1.5" /> Digest
+              </TabsTrigger>
+            )}
+            {!isAdmin && (
+              <TabsTrigger value="points" data-testid="settings-tab-points">
+                <Coins className="w-4 h-4 mr-1.5" /> Points
+              </TabsTrigger>
+            )}
+            {!isAdmin && (
+              <TabsTrigger value="privacy" data-testid="settings-tab-privacy">
+                <Lock className="w-4 h-4 mr-1.5" /> Privacy
+              </TabsTrigger>
+            )}
             <TabsTrigger value="school" data-testid="settings-tab-school">
               <Building2 className="w-4 h-4 mr-1.5" /> School
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="privacy" className="mt-4">
-            <PrivacySettings draft={privacyDraft} set={setPrivacy} />
-          </TabsContent>
+          {!isAdmin && (
+            <TabsContent value="privacy" className="mt-4">
+              <PrivacySettings draft={privacyDraft} set={setPrivacy} />
+            </TabsContent>
+          )}
           <TabsContent value="school" className="mt-4">
-            <SchoolAccessPanel role={role} students={students} />
+            <SchoolAccessPanel role={role} students={students} focusSection={open ? focusSection : ""} />
           </TabsContent>
+          {!isAdmin && (
           <TabsContent value="points" className="mt-4">
             <PointSystemSettings draft={pointDraft} set={setPoint} />
           </TabsContent>
+          )}
+          {!isAdmin && (
           <TabsContent value="digest" className="space-y-5 mt-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Weekly Delivery Schedule</Label>
@@ -176,14 +198,17 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest" })
               />
             </div>
           </TabsContent>
+          )}
         </Tabs>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="settings-cancel-btn">
-            Cancel
+            {isAdmin ? "Close" : "Cancel"}
           </Button>
-          <Button onClick={save} className="bg-teal-600 hover:bg-teal-700 text-white" data-testid="settings-save-btn">
-            Save Settings
-          </Button>
+          {!isAdmin && (
+            <Button onClick={save} className="bg-teal-600 hover:bg-teal-700 text-white" data-testid="settings-save-btn">
+              Save Settings
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

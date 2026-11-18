@@ -9,7 +9,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const roleName = (role) => (role === "case_manager" ? "Case manager" : role === "admin" ? "Administrator" : "Teacher");
 
-export const SchoolAccessPanel = ({ role, students }) => {
+export const SchoolAccessPanel = ({ role, students, focusSection = "" }) => {
   const [inviteRole, setInviteRole] = useState("teacher");
   const [invite, setInvite] = useState(null);
   const [invites, setInvites] = useState([]);
@@ -46,6 +46,13 @@ export const SchoolAccessPanel = ({ role, students }) => {
     const iepRows = (rosterRes.data || []).filter((student) => student.iep || student.plan_504);
     setRoster(iepRows);
   };
+
+  useEffect(() => {
+    if (!focusSection) return undefined;
+    const id = focusSection === "caseload" ? "school-caseload-section" : "school-invite-section";
+    document.getElementById(id)?.scrollIntoView({ block: "nearest" });
+    return undefined;
+  }, [focusSection]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -135,7 +142,7 @@ export const SchoolAccessPanel = ({ role, students }) => {
       </p>
 
       {role === "admin" && (
-        <div className="space-y-2">
+        <div id="school-invite-section" data-testid="school-invite-section" className={`space-y-2 ${focusSection === "invites" ? "rounded-xl ring-2 ring-teal-400 p-2" : ""}`}>
           <Label className="text-xs font-semibold">Invite staff into this school</Label>
           <div className="flex gap-2">
             <Select value={inviteRole} onValueChange={setInviteRole}>
@@ -170,18 +177,20 @@ export const SchoolAccessPanel = ({ role, students }) => {
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="school-join-code" className="text-xs font-semibold">Join a school with a code</Label>
-        <div className="flex gap-2">
-          <Input id="school-join-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Paste invite code" data-testid="school-join-code" />
-          <Button type="button" variant="outline" onClick={join} disabled={busy || code.trim().length < 8} data-testid="school-join-submit">
-            Join
-          </Button>
+      {role !== "admin" && (
+        <div className="space-y-2" data-testid="school-join-section">
+          <Label htmlFor="school-join-code" className="text-xs font-semibold">Join a school with a code</Label>
+          <div className="flex gap-2">
+            <Input id="school-join-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Paste invite code" data-testid="school-join-code" />
+            <Button type="button" variant="outline" onClick={join} disabled={busy || code.trim().length < 8} data-testid="school-join-submit">
+              Join
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {(role === "admin" || role === "teacher") && (
-        <div className="space-y-2">
+        <div id="school-caseload-section" data-testid="school-caseload-section" className={`space-y-2 ${focusSection === "caseload" ? "rounded-xl ring-2 ring-teal-400 p-2" : ""}`}>
           <Label className="text-xs font-semibold">Assign an IEP or 504 student to a case manager</Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Select value={studentId} onValueChange={setStudentId}>

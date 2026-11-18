@@ -649,8 +649,9 @@ begin
 end;
 $fn$;
 
--- Moves the caller off their personal school onto the inviting admin's school.
--- Classroom rows follow the membership. Caseload rows for the old school are dropped.
+-- Moves a teacher or case manager onto the inviting admin's school.
+-- Only school_id changes on students and logs. profiles.role (the job title) is left as-is.
+-- An existing school administrator cannot join, so their school is not replaced.
 create or replace function public.join_school(invite_code text)
 returns uuid
 language plpgsql
@@ -663,8 +664,6 @@ declare
   inv public.school_invites%rowtype;
   old_sid uuid;
   old_role text;
-  admin_count integer;
-  member_count integer;
   dest_name text;
   dest_type text;
 begin
@@ -697,18 +696,8 @@ begin
   if old_sid = inv.school_id then
     raise exception 'You are already in this school';
   end if;
-
   if old_role = 'admin' then
-    select count(*) into admin_count
-    from public.school_memberships m
-    where m.school_id = old_sid
-      and m.access_role = 'admin';
-    select count(*) into member_count
-    from public.school_memberships m
-    where m.school_id = old_sid;
-    if admin_count < 2 and member_count > 1 then
-      raise exception 'Assign another administrator before leaving this school';
-    end if;
+    raise exception 'School administrators stay with their school and cannot join another with a code';
   end if;
 
   select s.name, s.school_type into dest_name, dest_type
@@ -716,16 +705,18 @@ begin
   where s.id = inv.school_id;
 
   perform set_config('classroom_pulse.allow_role_write', 'on', true);
+  perform set_config('classroom_pulse.moving_school', 'on', true);
 
   update public.school_memberships
   set school_id = inv.school_id,
       access_role = inv.access_role
   where user_id = uid;
 
+  -- profiles.role is the job title and is intentionally not assigned here.
   update public.profiles
   set access_role = inv.access_role,
-      school_name = coalesce(dest_name, ''),
-      school_type = dest_type
+      school_name = coalesce(nullif(btrim(dest_name), ''), school_name),
+      school_type = coalesce(dest_type, school_type)
   where id = uid;
 
   update public.students set school_id = inv.school_id where owner_id = uid;
@@ -1233,7 +1224,9 @@ begin
     end if;
   end if;
 
-  if tg_table_name = 'behavior_logs' then
+  if tg_table_name = 'behavior_logs'
+     and coalesce(current_setting('classroom_pulse.moving_school', true), '') is distinct from 'on'
+  then
     if new.note_private
        or not (coalesce(new.include_in_digest, false) or coalesce(new.notify_parent, false))
     then
@@ -1285,6 +1278,10 @@ set search_path = public
 set row_security = off
 as $fn$
 begin
+  if coalesce(current_setting('classroom_pulse.moving_school', true), '') = 'on' then
+    return new;
+  end if;
+
   if coalesce(new.parent_update, '') <> '' and new.note_private = false then
     delete from public.behavior_staff_notes where log_id = new.id;
   elsif coalesce(new.note, '') <> '' then

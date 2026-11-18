@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { School, Users, Target, Mail, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -33,7 +33,7 @@ const Progress = ({ step }) => (
 export const OnboardingWizard = () => {
   const navigate = useNavigate();
   const { user, updateProfile, signOut } = useAuth();
-  const { classSection, setClassSection, addStudent, updatePointSettings, updateDigestSettings, pointSettings, digestSettings } = useClassroom();
+  const { classSection, setClassSection, addStudent, updatePointSettings, updateDigestSettings, pointSettings, digestSettings, role } = useClassroom();
   const periods = user?.periods || [];
   const period = periods.find((p) => p.id === classSection) || periods[0];
   const [step, setStep] = useState(0);
@@ -58,6 +58,10 @@ export const OnboardingWizard = () => {
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const meta = STEPS[step];
   const Icon = meta.icon;
+
+  useEffect(() => {
+    if (role === "admin") navigate("/", { replace: true });
+  }, [role, navigate]);
 
   const finish = () => {
     if (!form.className.trim()) {
@@ -117,6 +121,8 @@ export const OnboardingWizard = () => {
     if (step === 1) collectRoster();
     setStep(next);
   };
+
+  if (role === "admin") return null;
 
   return (
     <Dialog open>

@@ -10,6 +10,7 @@ import { ClassGoalBanner } from "@/components/ClassGoalBanner";
 import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
 import { scopeStudents, namesHidden } from "@/lib/rbac";
+import { AdminDashboard } from "@/components/AdminDashboard";
 
 const FILTERS = [
   { id: "all", label: "All Students" },
@@ -88,6 +89,8 @@ export default function HomePage() {
     else if (filter === "az") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     return list;
   }, [periodStudents, search, filter]);
+
+  if (role === "admin") return <AdminDashboard />;
 
   return (
     <div className="pt-6">

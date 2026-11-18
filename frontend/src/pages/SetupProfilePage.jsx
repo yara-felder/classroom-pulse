@@ -19,12 +19,30 @@ import { supabase } from "@/lib/supabase";
 
 import { ACCESS_ROLES } from "@/lib/rbac";
 
-const ROLES = [
-  "Special Education Teacher",
-  "BCBA",
-  "Gen-Ed Teacher",
-  "Paraprofessional",
-];
+const TITLES_BY_ACCESS = {
+  teacher: [
+    "Special Education Teacher",
+    "Gen-Ed Teacher",
+    "Paraprofessional",
+    "Instructional Aide",
+  ],
+  admin: [
+    "Principal",
+    "Assistant Principal",
+    "Special Education Director",
+    "Program Coordinator",
+  ],
+  case_manager: [
+    "IEP Case Manager",
+    "BCBA",
+    "Speech-Language Pathologist (SLP)",
+    "School Psychologist",
+  ],
+};
+
+const titlesFor = (accessRole) => TITLES_BY_ACCESS[accessRole] || TITLES_BY_ACCESS.teacher;
+
+const titleTestId = (title) => `role-${title.toLowerCase().replace(/[^a-z]+/g, "-")}`;
 
 const STEP_LABELS = ["Basic Info", "School Structure", "Classes & Periods"];
 
@@ -39,8 +57,13 @@ export default function SetupProfilePage() {
   const { user, updateProfile, signOut } = useAuth();
   const [step, setStep] = useState(0);
   const [name, setName] = useState(user?.name || "");
-  const [role, setRole] = useState(user?.role || "");
   const [accessRole, setAccessRole] = useState(user?.accessRole || "teacher");
+  const startingTitles = titlesFor(user?.accessRole || "teacher");
+  const startingRole = user?.role || "";
+  const startingIsOther = startingRole.length > 0 && !startingTitles.includes(startingRole);
+  const [role, setRole] = useState(startingRole);
+  const [otherSelected, setOtherSelected] = useState(startingIsOther);
+  const [otherTitle, setOtherTitle] = useState(startingIsOther ? startingRole : "");
   const [schoolName, setSchoolName] = useState(user?.schoolName || "");
   const [schoolType, setSchoolType] = useState(user?.schoolType || "");
   const savedPeriods = Array.isArray(user?.periods) ? user.periods.filter((p) => p?.id && p?.name) : [];
@@ -52,7 +75,28 @@ export default function SetupProfilePage() {
     savedPeriods.length ? savedPeriods.map((p) => ({ id: p.id, name: p.name })) : makePeriods(6)
   );
 
-  const canNextFromStep0 = name.trim().length > 1 && !!role && schoolName.trim().length > 1;
+  const titleOptions = titlesFor(accessRole);
+  const selectedTitle = otherSelected ? otherTitle.trim() : role;
+  const isAdminSetup = accessRole === "admin";
+  const setupSteps = isAdminSetup ? ["School profile"] : STEP_LABELS;
+  const canNextFromStep0 = name.trim().length > 1 && selectedTitle.length > 0 && schoolName.trim().length > 1;
+
+  const selectAccessRole = (id) => {
+    setAccessRole(id);
+    if (id === "admin") setStep(0);
+    if (otherSelected) return;
+    if (!titlesFor(id).includes(role)) setRole("");
+  };
+
+  const selectPresetTitle = (title) => {
+    setOtherSelected(false);
+    setRole(title);
+  };
+
+  const selectOtherTitle = () => {
+    setOtherSelected(true);
+    setRole(otherTitle.trim());
+  };
   const canNextFromStep1 = !!schoolType;
   const canFinish =
     schoolType === "elementary"
@@ -102,6 +146,30 @@ export default function SetupProfilePage() {
     });
   };
 
+  const finishAdmin = async () => {
+    if (!canNextFromStep0) {
+      toast.error("Fill Name, Role, and School Name.");
+      return;
+    }
+    try {
+      await updateProfile({
+        name: name.trim(),
+        role: selectedTitle,
+        accessRole: "admin",
+        schoolName: schoolName.trim(),
+        schoolType: "",
+        periods: [],
+        profileComplete: true,
+        onboardingComplete: true,
+      });
+    } catch (err) {
+      toast.error(err.message || "Couldn't save your profile");
+      return;
+    }
+    toast.success("School profile ready.");
+    navigate("/", { replace: true });
+  };
+
   const handleFinish = async () => {
     if (!canFinish) return;
     const finalPeriods =
@@ -111,7 +179,7 @@ export default function SetupProfilePage() {
     try {
       await updateProfile({
         name: name.trim(),
-        role,
+        role: selectedTitle,
         accessRole,
         schoolName: schoolName.trim(),
         schoolType,
@@ -177,10 +245,10 @@ export default function SetupProfilePage() {
                 className="text-base font-extrabold text-slate-900"
                 style={{ fontFamily: "Outfit" }}
               >
-                Set up your classroom
+                {isAdminSetup ? "Set up your school" : "Set up your classroom"}
               </div>
               <div className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
-                Step {step + 1} of 3 · {STEP_LABELS[step]}
+                Step {step + 1} of {setupSteps.length} · {setupSteps[step]}
               </div>
             </div>
           </div>
@@ -196,7 +264,7 @@ export default function SetupProfilePage() {
 
         {/* Progress bar */}
         <div className="flex gap-1.5 mb-6" data-testid="setup-progress">
-          {STEP_LABELS.map((label, i) => (
+          {setupSteps.map((label, i) => (
             <div
               key={label}
               className={`h-1.5 flex-1 rounded-full ${
@@ -234,7 +302,7 @@ export default function SetupProfilePage() {
                     <button
                       key={r.id}
                       type="button"
-                      onClick={() => setAccessRole(r.id)}
+                      onClick={() => selectAccessRole(r.id)}
                       data-testid={`access-role-${r.id}`}
                       className={`text-left rounded-xl border px-3 py-2 transition-colors ${accessRole === r.id ? "border-teal-500 bg-teal-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
                     >
@@ -250,14 +318,14 @@ export default function SetupProfilePage() {
                   className="mt-1.5 grid grid-cols-2 gap-1.5"
                   data-testid="setup-role-options"
                 >
-                  {ROLES.map((r) => (
+                  {titleOptions.map((r) => (
                     <button
                       key={r}
                       type="button"
-                      data-testid={`role-${r.toLowerCase().replace(/[^a-z]+/g, "-")}`}
-                      onClick={() => setRole(r)}
-                      className={`text-sm font-semibold rounded-xl border px-3 py-2.5 text-left transition-all ${
-                        role === r
+                      data-testid={titleTestId(r)}
+                      onClick={() => selectPresetTitle(r)}
+                      className={`text-sm font-semibold rounded-xl border px-3 py-2.5 text-left leading-snug transition-all ${
+                        !otherSelected && role === r
                           ? "bg-teal-500 text-white border-teal-500 shadow-sm"
                           : "bg-white text-slate-700 border-slate-200 hover:border-teal-300"
                       }`}
@@ -265,7 +333,33 @@ export default function SetupProfilePage() {
                       {r}
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    data-testid="role-other"
+                    onClick={selectOtherTitle}
+                    className={`text-sm font-semibold rounded-xl border px-3 py-2.5 text-left transition-all ${
+                      otherSelected
+                        ? "bg-teal-500 text-white border-teal-500 shadow-sm"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-teal-300"
+                    }`}
+                  >
+                    Other
+                  </button>
                 </div>
+                {otherSelected && (
+                  <Input
+                    id="setup-role-other"
+                    data-testid="setup-role-other-input"
+                    className="mt-1.5 h-8 text-sm"
+                    placeholder="Your title"
+                    value={otherTitle}
+                    onChange={(e) => {
+                      setOtherTitle(e.target.value);
+                      setRole(e.target.value.trim());
+                    }}
+                    aria-label="Other title"
+                  />
+                )}
               </div>
               <div>
                 <Label htmlFor="setup-school" className="text-xs font-semibold">
@@ -282,7 +376,7 @@ export default function SetupProfilePage() {
             </div>
           )}
 
-          {step === 1 && (
+          {!isAdminSetup && step === 1 && (
             <div className="space-y-4" data-testid="setup-step-structure">
               <h2
                 className="text-xl font-bold text-slate-900"
@@ -327,7 +421,7 @@ export default function SetupProfilePage() {
             </div>
           )}
 
-          {step === 2 && (
+          {!isAdminSetup && step === 2 && (
             <div className="space-y-4" data-testid="setup-step-periods">
               {schoolType === "elementary" ? (
                 <>
@@ -431,7 +525,17 @@ export default function SetupProfilePage() {
             ) : (
               <span />
             )}
-            {step < 2 ? (
+            {isAdminSetup ? (
+              <Button
+                data-testid="setup-finish-btn"
+                onClick={finishAdmin}
+                disabled={!canNextFromStep0}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white disabled:bg-slate-200"
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Finish Setup
+              </Button>
+            ) : step < 2 ? (
               <Button
                 data-testid="setup-next-btn"
                 onClick={goNext}

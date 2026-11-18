@@ -103,8 +103,9 @@ export const TopBar = () => {
           </div>
         </div>
 
-        {/* Period switcher */}
-        {showSwitcher ? (
+        {role === "admin" ? (
+          <div className="flex-1" />
+        ) : showSwitcher ? (
           <div className="flex-1 flex justify-center">
             <Select key={periodsKey} value={activePeriod?.id} onValueChange={setClassSection}>
               <SelectTrigger
@@ -136,6 +137,7 @@ export const TopBar = () => {
           </div>
         )}
 
+        {role !== "admin" && (
         <div
           data-testid="view-mode-toggle"
           className="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl"
@@ -162,6 +164,7 @@ export const TopBar = () => {
             Detailed
           </Label>
         </div>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -268,6 +271,7 @@ export const TopBar = () => {
         </DropdownMenu>
       </div>
 
+      {role !== "admin" && (
       <div className="md:hidden flex justify-center pb-3 px-4">
         <div
           data-testid="view-mode-toggle-mobile"
@@ -291,10 +295,11 @@ export const TopBar = () => {
           </span>
         </div>
       </div>
+      )}
 
       <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} />
       <ManagePeriodsDialog open={periodsOpen} onOpenChange={setPeriodsOpen} />
-      <AppSettingsDialog key={settingsTab} open={settingsOpen} onOpenChange={setSettingsOpen} initialTab={settingsTab} />
+      <AppSettingsDialog key={`${role}-${settingsTab}`} open={settingsOpen} onOpenChange={setSettingsOpen} initialTab={settingsTab} />
     </header>
   );
 };
