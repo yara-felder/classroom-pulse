@@ -18,6 +18,7 @@ import {
   Legend,
 } from "recharts";
 import { FileText, GraduationCap, Sparkles, AlertTriangle, Target } from "lucide-react";
+import { StudentAvatar } from "@/components/StudentAvatar";
 import { startOfWeek, addDays, format } from "date-fns";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
@@ -88,7 +89,7 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
             time: today,
             type: "Trial",
             name: sk.name,
-            outcome: t === "independent" ? "Ind" : t === "prompted" ? "Pmt" : "Ref",
+            outcome: t === "independent" ? "Ind" : t === "prompted" ? "Pmt" : "N/A",
             notes: `Trial ${i + 1}`,
           });
         });
@@ -126,7 +127,7 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
       y += 18;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.text(`Grade: ${student.grade}   ·   IEP: ${student.iep ? "Yes" : "No"}`, margin, y);
+      doc.text(`Grade: ${student.grade || "—"}   ·   IEP: ${student.iep ? "Yes" : "No"}`, margin, y);
       y += 14;
       doc.text(`Guardian contact: ${[student.guardianName, student.guardianEmail].filter(Boolean).join(" · ") || "—"}`, margin, y);
       y += 14;
@@ -325,19 +326,19 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
       >
         <SheetHeader className="pb-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <img
-              src={student.avatar}
-              alt={student.name}
-              className="w-14 h-14 rounded-full object-cover ring-2 ring-white shadow-sm bg-slate-100"
-            />
+            <StudentAvatar name={student.name} id={student.id} size="lg" className="ring-2 ring-white" />
             <div>
               <SheetTitle style={{ fontFamily: "Outfit" }} className="text-xl">
                 {student.name}
               </SheetTitle>
               <SheetDescription className="mt-0.5">Weekly analytics</SheetDescription>
               <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-600">
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>{student.grade}</span>
+                {student.grade ? (
+                  <>
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>{student.grade}</span>
+                  </>
+                ) : null}
                 {student.iep && (
                   <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px] font-bold ml-1">
                     IEP

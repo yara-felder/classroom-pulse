@@ -1,9 +1,52 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Upload, X, ClipboardPaste, FileSpreadsheet } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { parsePastedNames, parseRosterCsv } from "@/lib/rosterImport";
+
+const RosterPreview = ({ roster, setRoster, pending }) => {
+  const total = roster.length + pending.length;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs font-bold text-slate-700">Preview</span>
+        <span className="text-[11px] font-semibold text-slate-500" data-testid="roster-preview-count">
+          {total} student{total === 1 ? "" : "s"}
+        </span>
+      </div>
+      {total === 0 ? (
+        <p className="text-xs text-slate-400 italic" data-testid="roster-preview-empty">No students yet. You can also skip and add them later.</p>
+      ) : (
+        <ul className="max-h-44 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl" data-testid="roster-preview-list">
+          {roster.map((r, i) => (
+            <li key={`saved-${r.firstName}-${i}`} className="flex items-center gap-2 px-3 py-1.5 text-sm" data-testid={`roster-preview-row-${i}`}>
+              <span className="font-semibold text-slate-800 truncate">{`${r.firstName} ${r.lastName}`.trim()}</span>
+              <span className="text-[11px] text-slate-500 truncate flex-1">
+                {[r.grade, r.guardianEmail].filter(Boolean).join(" · ")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRoster((prev) => prev.filter((_, j) => j !== i))}
+                className="text-slate-400 hover:text-rose-600"
+                aria-label="Remove student"
+                data-testid={`roster-preview-remove-${i}`}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </li>
+          ))}
+          {pending.map((r, i) => (
+            <li key={`pending-${r.firstName}-${i}`} className="flex items-center gap-2 px-3 py-1.5 text-sm" data-testid={`roster-preview-pending-${i}`}>
+              <span className="font-semibold text-slate-800 truncate">{`${r.firstName} ${r.lastName}`.trim()}</span>
+              <span className="text-[11px] text-slate-400 flex-1">Added when you continue</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 const ModeTab = ({ active, onClick, icon: Icon, label, testid }) => (
   <button
@@ -18,7 +61,7 @@ const ModeTab = ({ active, onClick, icon: Icon, label, testid }) => (
   </button>
 );
 
-export const StepRoster = ({ roster, setRoster }) => {
+export const StepRoster = ({ roster, setRoster, flushRef }) => {
   const [mode, setMode] = useState("paste");
   const [text, setText] = useState("");
   const fileRef = useRef(null);
@@ -31,6 +74,18 @@ export const StepRoster = ({ roster, setRoster }) => {
     setRoster((prev) => [...prev, ...rows]);
     toast.success(`${rows.length} student${rows.length === 1 ? "" : "s"} added to preview`);
   };
+
+  useEffect(() => {
+    if (!flushRef) return undefined;
+    flushRef.current = () => {
+      const rows = mode === "paste" ? parsePastedNames(text) : [];
+      if (rows.length) setText("");
+      return rows;
+    };
+    return () => {
+      flushRef.current = () => [];
+    };
+  }, [flushRef, mode, text]);
 
   const onFile = (e) => {
     const file = e.target.files?.[0];
@@ -45,7 +100,20 @@ export const StepRoster = ({ roster, setRoster }) => {
     <div className="space-y-3" data-testid="onboarding-step-roster">
       <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
         <ModeTab active={mode === "paste"} onClick={() => setMode("paste")} icon={ClipboardPaste} label="Quick paste" testid="roster-mode-paste" />
-        <ModeTab active={mode === "csv"} onClick={() => setMode("csv")} icon={FileSpreadsheet} label="CSV import" testid="roster-mode-csv" />
+        <ModeTab
+          active={mode === "csv"}
+          onClick={() => {
+            const rows = parsePastedNames(text);
+            if (rows.length) {
+              setRoster((prev) => [...prev, ...rows]);
+              setText("");
+            }
+            setMode("csv");
+          }}
+          icon={FileSpreadsheet}
+          label="CSV import"
+          testid="roster-mode-csv"
+        />
       </div>
 
       {mode === "paste" ? (
@@ -82,37 +150,7 @@ export const StepRoster = ({ roster, setRoster }) => {
         </div>
       )}
 
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold text-slate-700">Preview</span>
-          <span className="text-[11px] font-semibold text-slate-500" data-testid="roster-preview-count">
-            {roster.length} student{roster.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        {roster.length === 0 ? (
-          <p className="text-xs text-slate-400 italic" data-testid="roster-preview-empty">No students yet. You can also skip and add them later.</p>
-        ) : (
-          <ul className="max-h-44 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl" data-testid="roster-preview-list">
-            {roster.map((r, i) => (
-              <li key={`${r.firstName}-${i}`} className="flex items-center gap-2 px-3 py-1.5 text-sm" data-testid={`roster-preview-row-${i}`}>
-                <span className="font-semibold text-slate-800 truncate">{`${r.firstName} ${r.lastName}`.trim()}</span>
-                <span className="text-[11px] text-slate-500 truncate flex-1">
-                  {[r.grade, r.guardianEmail].filter(Boolean).join(" · ")}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setRoster((prev) => prev.filter((_, j) => j !== i))}
-                  className="text-slate-400 hover:text-rose-600"
-                  aria-label="Remove student"
-                  data-testid={`roster-preview-remove-${i}`}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <RosterPreview roster={roster} setRoster={setRoster} pending={mode === "paste" ? parsePastedNames(text) : []} />
     </div>
   );
 };

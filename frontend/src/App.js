@@ -6,13 +6,17 @@ import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { ClassroomProvider } from "@/context/ClassroomContext";
 import { AuthProvider } from "@/context/AuthContext";
-import { RequireAuth, RedirectIfAuthed } from "@/components/RouteGuards";
+import { RequireAuth, RedirectIfAuthed, HomeGate } from "@/components/RouteGuards";
 import HomePage from "@/pages/HomePage";
+import LandingPage from "@/pages/LandingPage";
 import RosterPage from "@/pages/RosterPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import ResourcesPage from "@/pages/ResourcesPage";
 import DigestQueuePage from "@/pages/DigestQueuePage";
 import LoginPage from "@/pages/LoginPage";
+import PrivacyPage from "@/pages/PrivacyPage";
+import TermsPage from "@/pages/TermsPage";
+import UpdatePasswordPage from "@/pages/UpdatePasswordPage";
 import SetupProfilePage from "@/pages/SetupProfilePage";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { GuideSpotlight } from "@/components/GuideSpotlight";
@@ -29,9 +33,9 @@ const AuthedShell = ({ children }) => (
 function App() {
   return (
     <div className="App min-h-screen grain-bg" data-testid="app-root">
-      <AuthProvider>
-        <ClassroomProvider>
-          <BrowserRouter>
+      <BrowserRouter>
+        <AuthProvider>
+          <ClassroomProvider>
             <Routes>
               <Route
                 path="/login"
@@ -41,6 +45,9 @@ function App() {
                   </RedirectIfAuthed>
                 }
               />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/update-password" element={<UpdatePasswordPage />} />
               <Route
                 path="/setup-profile"
                 element={
@@ -52,11 +59,14 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <RequireAuth>
-                    <AuthedShell>
-                      <HomePage />
-                    </AuthedShell>
-                  </RequireAuth>
+                  <HomeGate
+                    landing={<LandingPage />}
+                    app={
+                      <AuthedShell>
+                        <HomePage />
+                      </AuthedShell>
+                    }
+                  />
                 }
               />
               <Route
@@ -112,9 +122,9 @@ function App() {
               />
             </Routes>
             <Toaster position="top-right" richColors />
-          </BrowserRouter>
-        </ClassroomProvider>
-      </AuthProvider>
+          </ClassroomProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </div>
   );
 }

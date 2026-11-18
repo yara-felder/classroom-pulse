@@ -9,6 +9,7 @@ import { ParentDigestTab } from "@/components/ParentDigestTab";
 import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
 import { FullReportButton } from "@/components/FullReportButton";
 import { useClassroom } from "@/context/ClassroomContext";
+import { StudentAvatar } from "@/components/StudentAvatar";
 
 export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }) => {
   const { students, can } = useClassroom();
@@ -38,19 +39,19 @@ export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }
       >
         <SheetHeader className="pb-4 border-b border-slate-200">
           <div className="flex items-start gap-3">
-            <img
-              src={student.avatar}
-              alt={student.name}
-              className="w-14 h-14 rounded-full object-cover ring-2 ring-white shadow-sm bg-slate-100"
-            />
+            <StudentAvatar name={student.name} id={student.id} size="lg" className="ring-2 ring-white" />
             <div className="flex-1 min-w-0">
               <SheetTitle style={{ fontFamily: "Outfit" }} className="text-xl">
                 {student.name}
               </SheetTitle>
               <SheetDescription className="mt-0.5">Student profile</SheetDescription>
               <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-600 flex-wrap">
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>{student.grade}</span>
+                {student.grade ? (
+                  <>
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>{student.grade}</span>
+                  </>
+                ) : null}
                 {student.iep && (
                   <Badge
                     data-testid={`profile-iep-badge-${student.id}`}

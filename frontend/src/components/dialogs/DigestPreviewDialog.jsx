@@ -58,7 +58,14 @@ export const useDigestSend = () => {
     const draft = fields || mergeDraft(original, digestDrafts[student.id]);
     const html = compileDigestHtml({ student, draft, footer: digestSettings.footer || DEFAULT_FOOTER, ferpa: FERPA_NOTICE });
     try {
-      await sendDigest(student.id, snapshot.queued.map((l) => l.id), "manual", html, isDraftEdited(draft, original));
+      await sendDigest(student.id, snapshot.queued.map((l) => l.id), "manual", {
+        personalNote: draft.personalNote,
+        intro: draft.intro,
+        homeConnection: draft.homeConnection,
+        footer: digestSettings.footer || DEFAULT_FOOTER,
+        edited: isDraftEdited(draft, original),
+        previewHtml: html,
+      });
       toast.success(`Digest sent to ${student.guardianEmail}`, {
         description: persistLive
           ? `${snapshot.wins.length} win(s), ${snapshot.supportNotes.length} note(s), ${snapshot.mastered.length} mastered`

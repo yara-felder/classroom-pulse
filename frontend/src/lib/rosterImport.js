@@ -16,7 +16,15 @@ const splitCsvLine = (line) => {
 };
 
 const splitName = (full) => {
-  const parts = full.trim().split(/\s+/);
+  const trimmed = full.trim();
+  const comma = trimmed.indexOf(",");
+  // "Last, First" is a common roster export. More than one comma stays a single line.
+  if (comma > 0 && trimmed.indexOf(",", comma + 1) === -1) {
+    const lastName = trimmed.slice(0, comma).trim();
+    const firstName = trimmed.slice(comma + 1).trim();
+    if (firstName && lastName) return { firstName, lastName };
+  }
+  const parts = trimmed.split(/\s+/);
   return { firstName: parts[0] || "", lastName: parts.slice(1).join(" ") };
 };
 

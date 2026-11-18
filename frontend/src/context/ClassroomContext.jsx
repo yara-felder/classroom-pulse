@@ -47,12 +47,12 @@ const ClassroomContext = createContext(null);
 
 const deriveStatus = (sk) => {
   if (computeMasteryStreak(sk.history, sk.mastery || DEFAULT_MASTERY).met) return "Mastered";
-  if (sk.lastPrompt === "Refused") return "Needs Support";
+  if (sk.lastPrompt === "Refused" || sk.lastPrompt === "N/A") return "Needs Support";
   return "In Progress";
 };
 
 const DELTA = { independent: 5, prompted: 2, refused: -3 };
-const LABEL = { independent: "Independent", prompted: "Prompted", refused: "Refused" };
+const LABEL = { independent: "Independent", prompted: "Prompted", refused: "N/A" };
 
 const buildInitialSkillsByStudent = (students) => {
   const map = {};
@@ -194,6 +194,8 @@ export const ClassroomProvider = ({ children }) => {
   const ownerId = persistLive ? authUser.id : null;
   const [hydrated, setHydrated] = useState(false);
   const hydratedRef = useRef(false);
+  const pendingStudentIds = useRef(new Set());
+  const localSettingsStamp = useRef(0);
 
   const [pointSettings, setPointSettings] = useState(() => ({
     ...DEFAULT_POINT_SETTINGS,
@@ -204,6 +206,10 @@ export const ClassroomProvider = ({ children }) => {
   const [detailedMode, setDetailedMode] = useState(false);
   const [classSection, setClassSection] = useState(CLASS_SECTIONS[0].id);
   const [skillsByStudent, setSkillsByStudent] = useState({});
+  const studentsRef = useRef(students);
+  const skillsRef = useRef(skillsByStudent);
+  studentsRef.current = students;
+  skillsRef.current = skillsByStudent;
   const [iepGoalsByStudent, setIepGoalsByStudent] = useState({});
   const [customSkills, setCustomSkills] = useState([]);
   const [guide, setGuide] = useState(null);
@@ -212,7 +218,7 @@ export const ClassroomProvider = ({ children }) => {
     ...readLS(PRIVACY_KEY, {}),
   }));
   const [viewAsRole, setViewAsRoleState] = useState(() => readLS(VIEW_AS_KEY, null));
-  const role = viewAsRole || authUser?.accessRole || "teacher";
+  const role = (authUser?.isDemo && viewAsRole) || authUser?.accessRole || "teacher";
   const can = (action) => canDo(role, action);
   const checklistKey = checklistKeyFor(authUser);
   const [checklist, setChecklist] = useState(EMPTY_CHECKLIST);
@@ -257,28 +263,59 @@ export const ClassroomProvider = ({ children }) => {
     let cancelled = false;
     hydratedRef.current = false;
     setHydrated(false);
+    const stampAtStart = localSettingsStamp.current;
     (async () => {
       try {
         const data = await loadClassroom(authUser.id);
         if (cancelled) return;
-        setStudents(data.students);
+        const serverIds = new Set(data.students.map((student) => student.id));
+        pendingStudentIds.current.forEach((id) => {
+          if (serverIds.has(id)) pendingStudentIds.current.delete(id);
+        });
+        const justAdded = studentsRef.current.filter(
+          (student) => pendingStudentIds.current.has(student.id) && !serverIds.has(student.id)
+        );
+        const mergedStudents = [...justAdded, ...data.students];
+        studentsRef.current = mergedStudents;
+        setStudents(mergedStudents);
         setLogs(data.logs);
-        setSkillsByStudent(data.skillsByStudent);
+        const mergedSkills = { ...data.skillsByStudent };
+        justAdded.forEach((student) => {
+          if (skillsRef.current[student.id]) mergedSkills[student.id] = skillsRef.current[student.id];
+        });
+        skillsRef.current = mergedSkills;
+        setSkillsByStudent(mergedSkills);
         setIepGoalsByStudent(data.iepGoalsByStudent);
         setDigestSends(data.digestSends);
         const s = data.settings;
         if (s) {
-          setDigestSettings({ ...DEFAULT_DIGEST_SETTINGS, ...(s.digest || {}) });
-          setPointSettings({ ...DEFAULT_POINT_SETTINGS, ...(s.points || {}) });
+          if (localSettingsStamp.current === stampAtStart) {
+            setDigestSettings({ ...DEFAULT_DIGEST_SETTINGS, ...(s.digest || {}) });
+            setPointSettings({ ...DEFAULT_POINT_SETTINGS, ...(s.points || {}) });
+          }
           setPrivacySettings({ ...DEFAULT_PRIVACY_SETTINGS, ...(s.privacy || {}) });
           setChecklist({ ...EMPTY_CHECKLIST, ...(s.checklist || {}) });
           setCustomSkills(s.custom_skills || []);
           setDigestDrafts(s.digest_drafts || {});
-          if (s.class_section) setClassSection(s.class_section);
-          else if (authUser.periods?.[0]?.id) setClassSection(authUser.periods[0].id);
-        } else if (authUser.periods?.[0]?.id) {
-          setClassSection(authUser.periods[0].id);
         }
+        const studentPeriodIds = data.students.flatMap((student) =>
+          Array.isArray(student.periodIds) && student.periodIds.length
+            ? student.periodIds
+            : student.periodId
+              ? [student.periodId]
+              : []
+        );
+        const pendingPeriods = justAdded.flatMap((student) =>
+          Array.isArray(student.periodIds) ? student.periodIds : []
+        );
+        const preferred = s?.class_section || authUser.periods?.[0]?.id || null;
+        const nextSection =
+          pendingPeriods.length && !pendingPeriods.includes(preferred)
+            ? pendingPeriods[0]
+            : preferred && studentPeriodIds.includes(preferred)
+              ? preferred
+              : pendingPeriods[0] || studentPeriodIds[0] || preferred;
+        if (nextSection) setClassSection(nextSection);
         hydratedRef.current = true;
         setHydrated(true);
       } catch (err) {
@@ -386,8 +423,14 @@ export const ClassroomProvider = ({ children }) => {
       return next;
     });
 
-  const updateDigestSettings = (updates) => setDigestSettings((prev) => ({ ...prev, ...updates }));
-  const updatePointSettings = (updates) => setPointSettings((prev) => ({ ...prev, ...updates }));
+  const updateDigestSettings = (updates) => {
+    localSettingsStamp.current += 1;
+    setDigestSettings((prev) => ({ ...prev, ...updates }));
+  };
+  const updatePointSettings = (updates) => {
+    localSettingsStamp.current += 1;
+    setPointSettings((prev) => ({ ...prev, ...updates }));
+  };
 
   const resetPoints = (at = new Date()) => {
     setStudents((prev) => {
@@ -428,24 +471,32 @@ export const ClassroomProvider = ({ children }) => {
     return () => clearInterval(id);
   }, [pointSettings.cadence, authUser?.id]);
 
-  const sendDigest = async (studentId, entryIds, mode = "manual", html = "", edited = false) => {
+  const sendDigest = async (studentId, entryIds, mode = "manual", content = {}) => {
+    const personalNote = content.personalNote || "";
+    const intro = content.intro || "";
+    const homeConnection = content.homeConnection || "";
+    const footer = content.footer || "";
+    const edited = !!content.edited;
     const entry = {
       id: nextId("dg"),
       studentId,
       entryIds,
       mode,
-      html,
+      html: content.previewHtml || "",
       edited,
       sentAt: new Date().toISOString(),
     };
     if (persistLive) {
       const saved = await invokeSendDigest({
         studentId,
-        html,
         entryIds,
         mode,
         edited,
         id: entry.id,
+        personalNote,
+        intro,
+        homeConnection,
+        footer,
       });
       const mapped = saved ? mapSend(saved) : entry;
       setDigestSends((prev) => [...prev, mapped]);
@@ -490,6 +541,10 @@ export const ClassroomProvider = ({ children }) => {
           entryIds: snap.queued.map((l) => l.id),
           mode: "auto",
           html,
+          personalNote: draft.personalNote,
+          intro: draft.intro,
+          homeConnection: draft.homeConnection,
+          footer: digestSettings.footer || DEFAULT_FOOTER,
           edited: isDraftEdited(draft, original),
           sentAt,
         };
@@ -503,11 +558,14 @@ export const ClassroomProvider = ({ children }) => {
           try {
             const row = await invokeSendDigest({
               studentId: a.studentId,
-              html: a.html,
               entryIds: a.entryIds,
               mode: "auto",
               edited: a.edited,
               id: a.id,
+              personalNote: a.personalNote,
+              intro: a.intro,
+              homeConnection: a.homeConnection,
+              footer: a.footer,
             });
             saved.push(row ? mapSend(row) : a);
             clearDigestDraft(a.studentId);
@@ -552,7 +610,6 @@ export const ClassroomProvider = ({ children }) => {
           const ln = updates.lastName ?? parts.slice(1).join(" ") ?? "";
           const fullName = `${fn} ${ln}`.trim();
           next.name = fullName;
-          next.avatar = updates.avatar || s.avatar;
         }
         if (persistLive) upsertStudent(next, ownerId).catch(catchPersist);
         return next;
@@ -741,6 +798,7 @@ export const ClassroomProvider = ({ children }) => {
   };
 
   const logTrial = (studentId, skillId, trialIdx, level) => {
+    markChecklist("iep");
     setSkillsByStudent((prev) => {
       const next = { ...prev };
       next[studentId] = (prev[studentId] || []).map((sk) => {
@@ -781,9 +839,7 @@ export const ClassroomProvider = ({ children }) => {
   }) => {
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     const id = nextId("std");
-    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      fullName
-    )}&background=0d9488&color=fff&size=200&bold=true`;
+    pendingStudentIds.current.add(id);
     const resolvedPeriodIds =
       Array.isArray(periodIds) && periodIds.length > 0
         ? [...new Set(periodIds)]
@@ -793,8 +849,7 @@ export const ClassroomProvider = ({ children }) => {
     const newStudent = {
       id,
       name: fullName,
-      avatar,
-      grade: (grade || "").trim() || "3rd Grade",
+      grade: (grade || "").trim(),
       periodIds: resolvedPeriodIds,
       points: 0,
       lifetimePoints: 0,
@@ -808,8 +863,9 @@ export const ClassroomProvider = ({ children }) => {
       parentDigestEnabled: !!parentDigestEnabled,
       createdAt: new Date().toISOString(),
     };
-    setStudents((prev) => [newStudent, ...prev]);
-    if (persistLive) upsertStudent(newStudent, ownerId).catch(catchPersist);
+    const withStudent = [newStudent, ...studentsRef.current.filter((student) => student.id !== id)];
+    studentsRef.current = withStudent;
+    setStudents(withStudent);
 
     if (initialSkills.length > 0) {
       const today = new Date();
@@ -831,8 +887,16 @@ export const ClassroomProvider = ({ children }) => {
           trend: [0, 0, 0, 0, 0, 0, 0],
         };
       });
-      setSkillsByStudent((prev) => ({ ...prev, [id]: skills }));
-      if (persistLive) skills.forEach((sk) => upsertSkill(sk, id, ownerId).catch(catchPersist));
+      const withSkills = { ...skillsRef.current, [id]: skills };
+      skillsRef.current = withSkills;
+      setSkillsByStudent(withSkills);
+      if (persistLive) {
+        upsertStudent(newStudent, ownerId)
+          .then(() => Promise.all(skills.map((sk) => upsertSkill(sk, id, ownerId))))
+          .catch(catchPersist);
+      }
+    } else if (persistLive) {
+      upsertStudent(newStudent, ownerId).catch(catchPersist);
     }
 
     return newStudent;

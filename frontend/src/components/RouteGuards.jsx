@@ -21,6 +21,14 @@ export const RequireAuth = ({ children }) => {
   return children;
 };
 
+export const HomeGate = ({ landing, app }) => {
+  const { user, ready } = useAuth();
+  if (!ready) return <AuthSplash />;
+  if (!user) return landing;
+  if (!user.profileComplete) return <Navigate to="/setup-profile" replace />;
+  return app;
+};
+
 export const RedirectIfAuthed = ({ children }) => {
   const { user, ready } = useAuth();
   if (!ready) return <AuthSplash />;

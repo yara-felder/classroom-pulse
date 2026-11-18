@@ -22,7 +22,7 @@ import { iepSummaryLines, pdfFilename, deriveIepStatus } from "@/lib/goalSummari
 
 const shortDate = (iso) => (iso ? format(new Date(iso), "MMM d, yyyy") : "—");
 
-const CHOICE_LABEL = { independent: "Ind", prompted: "Pmt", refused: "Ref" };
+const CHOICE_LABEL = { independent: "Ind", prompted: "Pmt", refused: "N/A" };
 
 const statusMeta = {
   Mastered: {

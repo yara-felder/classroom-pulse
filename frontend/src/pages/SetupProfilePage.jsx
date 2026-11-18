@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  GraduationCap,
   School,
   Users,
   Building2,
@@ -16,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 import { ACCESS_ROLES } from "@/lib/rbac";
 
@@ -36,16 +36,21 @@ const makePeriods = (count) =>
 
 export default function SetupProfilePage() {
   const navigate = useNavigate();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, signOut } = useAuth();
   const [step, setStep] = useState(0);
   const [name, setName] = useState(user?.name || "");
   const [role, setRole] = useState(user?.role || "");
   const [accessRole, setAccessRole] = useState(user?.accessRole || "teacher");
   const [schoolName, setSchoolName] = useState(user?.schoolName || "");
   const [schoolType, setSchoolType] = useState(user?.schoolType || "");
-  const [classroomName, setClassroomName] = useState("Room 104 · 3rd Grade");
-  const [periodCount, setPeriodCount] = useState(6);
-  const [periods, setPeriods] = useState(makePeriods(6));
+  const savedPeriods = Array.isArray(user?.periods) ? user.periods.filter((p) => p?.id && p?.name) : [];
+  const [classroomName, setClassroomName] = useState(
+    user?.schoolType === "elementary" && savedPeriods[0]?.name ? savedPeriods[0].name : "Room 104 · 3rd Grade"
+  );
+  const [periodCount, setPeriodCount] = useState(savedPeriods.length || 6);
+  const [periods, setPeriods] = useState(
+    savedPeriods.length ? savedPeriods.map((p) => ({ id: p.id, name: p.name })) : makePeriods(6)
+  );
 
   const canNextFromStep0 = name.trim().length > 1 && !!role && schoolName.trim().length > 1;
   const canNextFromStep1 = !!schoolType;
@@ -101,7 +106,7 @@ export default function SetupProfilePage() {
     if (!canFinish) return;
     const finalPeriods =
       schoolType === "elementary"
-        ? [{ id: `cls-${Date.now().toString(36)}-0`, name: classroomName.trim() }]
+        ? [{ id: savedPeriods[0]?.id || `cls-${Date.now().toString(36)}-0`, name: classroomName.trim() }]
         : periods.map((p) => ({ id: p.id, name: p.name.trim() }));
     try {
       await updateProfile({
@@ -140,25 +145,53 @@ export default function SetupProfilePage() {
 
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
+  const handleSignOut = async () => {
+    try {
+      if (supabase) {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+      }
+      await signOut();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      toast.error(err.message || "Could not sign out.");
+    }
+  };
+
   return (
     <div data-testid="setup-profile-page" className="min-h-screen grain-bg py-10 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Brand */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-sm">
-            <GraduationCap className="w-5 h-5 text-white" strokeWidth={2.4} />
-          </div>
-          <div>
-            <div
-              className="text-base font-extrabold text-slate-900"
-              style={{ fontFamily: "Outfit" }}
-            >
-              Set up your classroom
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src={`${process.env.PUBLIC_URL}/logo-mark.png`}
+              alt=""
+              className="w-10 h-10 rounded-xl object-cover shadow-sm"
+            />
+            <div className="min-w-0">
+              <div
+                className="text-base font-extrabold text-slate-900"
+                style={{ fontFamily: "Outfit" }}
+              >
+                Set up your classroom
+              </div>
+              <div className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
+                Step {step + 1} of 3 · {STEP_LABELS[step]}
+              </div>
             </div>
-            <div className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
-              Step {step + 1} of 3 · {STEP_LABELS[step]}
-            </div>
           </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            data-testid="setup-sign-out"
+            className="shrink-0 text-xs font-semibold text-slate-400 hover:text-slate-700"
+          >
+            Sign out
+          </button>
         </div>
 
         {/* Progress bar */}

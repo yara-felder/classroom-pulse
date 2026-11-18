@@ -19,7 +19,7 @@ import { toast } from "sonner";
 const CHOICES = [
   { id: "independent", short: "Ind", tone: "emerald" },
   { id: "prompted", short: "Pmt", tone: "amber" },
-  { id: "refused", short: "Ref", tone: "rose" },
+  { id: "refused", short: "N/A", tone: "rose" },
 ];
 
 const choiceActive = {

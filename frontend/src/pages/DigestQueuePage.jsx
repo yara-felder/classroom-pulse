@@ -10,6 +10,7 @@ import { buildOriginalDraft, isDraftEdited, mergeDraft } from "@/lib/digestDraft
 import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
 import { format } from "date-fns";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
+import { StudentAvatar } from "@/components/StudentAvatar";
 
 const Stat = ({ icon: Icon, tone, value, label }) => (
   <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${tone}`}>
@@ -56,7 +57,7 @@ const StudentDigestCard = ({ student, snap, lastSend, review, onPreview }) => {
     <div className={`bg-white border rounded-2xl p-4 ${off ? "border-slate-100 opacity-60" : "border-slate-200"}`} data-testid={`digest-queue-card-${student.id}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <img src={student.avatar} alt={student.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+          <StudentAvatar name={student.name} id={student.id} size="md" />
           <div className="min-w-0">
             <p className="font-bold text-slate-900 truncate" style={{ fontFamily: "Outfit" }}>{student.name}</p>
             <p className="text-[11px] text-slate-500 truncate" data-testid={`digest-queue-guardian-${student.id}`}>

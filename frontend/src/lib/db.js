@@ -37,7 +37,7 @@ export const profileToRow = (user) => ({
 export const mapStudent = (row) => ({
   id: row.id,
   name: row.name,
-  avatar: row.avatar,
+  avatar: null,
   grade: row.grade,
   periodIds: Array.isArray(row.period_ids) ? row.period_ids : [],
   points: row.points ?? 0,
@@ -57,7 +57,7 @@ export const studentToRow = (s, ownerId) => ({
   id: s.id,
   owner_id: ownerId,
   name: s.name,
-  avatar: s.avatar || null,
+  avatar: null,
   grade: s.grade || null,
   period_ids: s.periodIds || [],
   points: s.points ?? 0,
@@ -189,25 +189,35 @@ const groupByStudent = (rows, mapFn) => {
 export async function fetchProfile(userId, email) {
   const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
   throwIf(error);
-  if (!data) {
-    const blank = {
-      id: userId,
-      email,
-      name: "",
-      initials: "U",
-      role: "",
-      access_role: "teacher",
-      school_name: "",
-      school_type: null,
-      periods: [],
-      profile_complete: false,
-      onboarding_complete: false,
-    };
-    const { error: upErr } = await supabase.from("profiles").upsert(blank);
-    throwIf(upErr);
-    return mapProfile(blank, email);
+
+  let row = data;
+  if (!row) {
+    const { error: insertError } = await supabase.from("profiles").insert({ id: userId, email });
+    if (insertError && insertError.code !== "23505") throwIf(insertError);
+    const again = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+    throwIf(again.error);
+    row = again.data;
+    if (!row) throw new Error("Couldn't load your profile. Sign in again.");
   }
-  return mapProfile(data, email);
+
+  const { count, error: countError } = await supabase
+    .from("students")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", userId);
+  throwIf(countError);
+
+  const hasStudents = (count || 0) > 0;
+  const hasClassroom = hasStudents || !!(row.name || "").trim() || !!(row.school_name || "").trim();
+  if (!row.profile_complete && hasClassroom) {
+    const { error: repairError } = await supabase
+      .from("profiles")
+      .update({ profile_complete: true })
+      .eq("id", userId);
+    throwIf(repairError);
+    row = { ...row, profile_complete: true };
+  }
+
+  return mapProfile(row, email);
 }
 
 export async function upsertProfile(user) {

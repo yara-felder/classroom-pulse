@@ -7,6 +7,7 @@ import { SupportDialog } from "@/components/dialogs/SupportDialog";
 import { QuickLogDialog } from "@/components/dialogs/QuickLogDialog";
 import { visibleNote } from "@/lib/rbac";
 import { StudentProfileSheet } from "@/components/StudentProfileSheet";
+import { StudentAvatar } from "@/components/StudentAvatar";
 
 const statusStyles = {
   Thriving: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -52,11 +53,7 @@ export const StudentCard = ({ student }) => {
         <div className="p-5">
           <div className="flex items-start gap-3">
             <div className="relative">
-              <img
-                src={student.avatar}
-                alt={student.name}
-                className="w-14 h-14 rounded-full object-cover ring-2 ring-white shadow-sm bg-slate-100"
-              />
+              <StudentAvatar name={student.name} id={student.id} size="lg" className="ring-2 ring-white" />
               <div className="absolute -bottom-1 -right-1 flex flex-col items-end gap-0.5">
                 {student.iep && (
                   <span

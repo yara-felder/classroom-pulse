@@ -45,7 +45,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-1",
     name: "Maya Lin",
-    avatar: "https://images.unsplash.com/photo-1557457088-c5e2c380fd9b?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 14,
@@ -60,7 +59,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-2",
     name: "Lucas Rodriguez",
-    avatar: "https://images.pexels.com/photos/5211432/pexels-photo-5211432.jpeg?auto=compress&cs=tinysrgb&w=200",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 18,
@@ -75,7 +73,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-3",
     name: "Aaliyah Johnson",
-    avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 9,
@@ -90,7 +87,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-4",
     name: "Ethan Chen",
-    avatar: "https://images.unsplash.com/photo-1639432040713-d681d3b208b6?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 12,
@@ -105,7 +101,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-5",
     name: "Noah Williams",
-    avatar: "https://images.pexels.com/photos/10646608/pexels-photo-10646608.jpeg?auto=compress&cs=tinysrgb&w=200",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 16,
@@ -120,7 +115,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-6",
     name: "Sophia Patel",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 11,
@@ -135,7 +129,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-7",
     name: "Jamal Carter",
-    avatar: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 13,
@@ -150,7 +143,6 @@ export const INITIAL_STUDENTS = [
   {
     id: "std-8",
     name: "Isabella Nguyen",
-    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?crop=entropy&cs=srgb&fm=jpg&w=200&q=80",
     grade: "3rd Grade",
     periodIds: ["3g-p2-math"],
     points: 15,

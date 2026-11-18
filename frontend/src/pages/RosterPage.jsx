@@ -9,6 +9,7 @@ import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
 import { EmptyPeriodState } from "@/components/EmptyPeriodState";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
 import { scopeStudents, namesHidden } from "@/lib/rbac";
+import { StudentAvatar } from "@/components/StudentAvatar";
 
 export default function RosterPage() {
   const { students, classSection, can, role, privacySettings } = useClassroom();
@@ -91,11 +92,7 @@ export default function RosterPage() {
             data-testid={`roster-item-${s.id}`}
             className="relative bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3 hover:shadow-md transition-shadow animate-rise"
           >
-            <img
-              src={s.avatar}
-              alt={s.name}
-              className="w-14 h-14 rounded-full object-cover ring-2 ring-white shadow-sm bg-slate-100"
-            />
+            <StudentAvatar name={s.name} id={s.id} size="lg" className="ring-2 ring-white" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap pr-9">
                 <h3
@@ -121,10 +118,12 @@ export default function RosterPage() {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span className="truncate">{s.grade}</span>
-              </div>
+              {s.grade ? (
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  <span className="truncate">{s.grade}</span>
+                </div>
+              ) : null}
               {s.guardianEmail ? (
                 <a
                   href={`mailto:${s.guardianEmail}`}

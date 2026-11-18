@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { fetchProfile, upsertProfile } from "@/lib/db";
 
@@ -51,7 +52,19 @@ const readDemo = () => {
   return u?.isDemo ? u : null;
 };
 
+// Supabase emits PASSWORD_RECOVERY from a startup timer, before effects run.
+const passwordRecoveryNav = { current: null };
+if (isSupabaseConfigured && supabase) {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      passwordRecoveryNav.current?.("/update-password", { replace: true });
+    }
+  });
+}
+
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
+  passwordRecoveryNav.current = navigate;
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
 
@@ -91,7 +104,12 @@ export const AuthProvider = ({ children }) => {
         if (data.session) await loadFromSession(data.session);
         else persistActive(readDemo());
         const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-          loadFromSession(session).catch((err) => console.error(err));
+          // Wait until the new session is stored. A query inside this callback
+          // can run before the token is attached, see an empty profile, and
+          // treat a returning teacher as a brand-new account.
+          setTimeout(() => {
+            loadFromSession(session).catch((err) => console.error(err));
+          }, 0);
         });
         unsub = () => listener.subscription.unsubscribe();
       } catch (err) {

@@ -4,10 +4,16 @@ import { Rocket, Check, ChevronDown, ChevronUp, X, Sparkles, AlertTriangle, List
 import { toast } from "sonner";
 import { useClassroom } from "@/context/ClassroomContext";
 
+const TRIAL_KEY = [
+  { code: "Ind", meaning: "independently completed" },
+  { code: "Pmt", meaning: "prompted to complete the trial or engage in the response" },
+  { code: "N/A", meaning: "Elected not to opt in at this time" },
+];
+
 export const CHECKLIST_STEPS = [
   { id: "positive", label: "Log a positive skill", hint: "Celebrate a moment with the quick-log window", icon: Sparkles },
   { id: "support", label: "Log a support cue", hint: "Try the empathy-first support logger", icon: AlertTriangle },
-  { id: "iep", label: "Log an IEP skill trial", hint: "Record a trial and prompt level on an IEP goal", icon: ListChecks },
+  { id: "iep", label: "Log a skill trial", hint: "These marks work on a regular skill goal and on an IEP goal.", icon: ListChecks, trialKey: true },
   { id: "digest", label: "Preview a parent digest draft", hint: "See the weekly email a family would receive", icon: Mail },
   { id: "goal", label: "View class celebration progress", hint: "Find your class-wide milestone bar", icon: Trophy },
 ];
@@ -15,9 +21,9 @@ export const CHECKLIST_STEPS = [
 const StepRow = ({ step, done, onDo }) => {
   const Icon = step.icon;
   return (
-    <li className="flex items-center gap-3 py-2.5" data-testid={`checklist-item-${step.id}`}>
+    <li className={`flex gap-3 py-2.5 ${step.trialKey ? "items-start" : "items-center"}`} data-testid={`checklist-item-${step.id}`}>
       <span
-        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${done ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"}`}
+        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${step.trialKey ? "mt-0.5" : ""} ${done ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"}`}
         data-testid={`checklist-status-${step.id}`}
         data-done={done ? "true" : "false"}
       >
@@ -25,13 +31,24 @@ const StepRow = ({ step, done, onDo }) => {
       </span>
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-semibold ${done ? "text-slate-400 line-through" : "text-slate-800"}`}>{step.label}</p>
-        <p className="text-[11px] text-slate-500 truncate">{step.hint}</p>
+        <p className={`text-[11px] text-slate-500 ${step.trialKey ? "leading-snug" : "truncate"}`}>{step.hint}</p>
+        {step.trialKey && (
+          <ul className="mt-1.5 space-y-0.5" data-testid="checklist-trial-key">
+            {TRIAL_KEY.map((item) => (
+              <li key={item.code} className="text-[11px] text-slate-600 leading-snug">
+                <span className="font-bold text-slate-800">{item.code}</span>
+                <span className="text-slate-400"> — </span>
+                {item.meaning}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       {!done && (
         <button
           type="button"
           onClick={onDo}
-          className="text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg px-3 py-1.5 shrink-0 transition-colors"
+          className={`text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg px-3 py-1.5 shrink-0 transition-colors ${step.trialKey ? "self-center" : ""}`}
           data-testid={`checklist-do-${step.id}`}
         >
           Show me
@@ -43,7 +60,7 @@ const StepRow = ({ step, done, onDo }) => {
 
 export const GettingStartedCard = ({ periodStudents }) => {
   const navigate = useNavigate();
-  const { checklist, updateChecklist, iepGoalsByStudent, setGuide } = useClassroom();
+  const { checklist, updateChecklist, skillsByStudent, iepGoalsByStudent, setGuide } = useClassroom();
   const doneCount = CHECKLIST_STEPS.filter((s) => checklist.done[s.id]).length;
 
   if (checklist.dismissed || doneCount === CHECKLIST_STEPS.length) return null;
@@ -63,18 +80,28 @@ export const GettingStartedCard = ({ periodStudents }) => {
     support: () =>
       guideTo("/", { selector: '[data-testid^="needs-support-btn-"]', hint: "Tap here when a student needs support." }),
     iep: () => {
-      const s = periodStudents.find((st) => (st.iep || st.plan504) && (iepGoalsByStudent[st.id] || []).length > 0);
-      if (!s) {
-        toast("No students with IEP or 504 goals yet", {
-          description: "Open a student, tap Edit, turn on IEP or 504, then add a goal in their profile.",
+      const withSkill = periodStudents.find((st) => (skillsByStudent[st.id] || []).length > 0);
+      if (withSkill) {
+        const skill = skillsByStudent[withSkill.id][0];
+        guideTo("/", {
+          pre: `[data-testid="student-detail-trigger-${withSkill.id}"]`,
+          selector: `[data-testid="skill-${skill.id}-slot-1"]`,
+          hint: "Tap Ind, Pmt, or Ref on this skill.",
         });
         return;
       }
-      const goal = iepGoalsByStudent[s.id][0];
-      guideTo("/", {
-        pre: `[data-testid="student-detail-trigger-${s.id}"]`,
-        selector: `[data-testid="iep-goal-${goal.id}-slot-1"]`,
-        hint: "Tap a slot to log your first trial!",
+      const withPlan = periodStudents.find((st) => (iepGoalsByStudent[st.id] || []).length > 0);
+      if (withPlan) {
+        const goal = iepGoalsByStudent[withPlan.id][0];
+        guideTo("/", {
+          pre: `[data-testid="student-detail-trigger-${withPlan.id}"]`,
+          selector: `[data-testid="iep-goal-${goal.id}-slot-1"]`,
+          hint: "Tap Ind, Pmt, or Ref on this goal.",
+        });
+        return;
+      }
+      toast("Add a skill goal first", {
+        description: "Open a student profile and add a skill. The same marks work on an IEP goal too.",
       });
     },
     digest: () =>

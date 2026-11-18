@@ -1,11 +1,22 @@
 // Parent Digest sender. Deploy: supabase functions deploy send-digest
 // Secrets: RESEND_API_KEY, DIGEST_FROM_EMAIL (verified in Resend)
+// Requires the build_parent_digest migration. The function never sends client HTML.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type DigestPayload = {
+  html: string;
+  entry_ids: string[];
+  student_id: string;
+  owner_id: string;
+  school_id: string;
+  guardian_email: string;
+  student_name: string;
 };
 
 Deno.serve(async (req) => {
@@ -33,29 +44,41 @@ Deno.serve(async (req) => {
       return json({ error: "Not signed in" }, 401);
     }
 
-    const body = await req.json();
-    const { studentId, html, entryIds = [], mode = "manual", edited = false, id } = body || {};
-    if (!studentId || !html) {
-      return json({ error: "studentId and html are required" }, 400);
+    const body = await req.json().catch(() => null);
+    const studentId = body?.studentId;
+    const entryIds = body?.entryIds;
+    const mode = body?.mode === "auto" ? "auto" : "manual";
+    const edited = !!body?.edited;
+    const id = typeof body?.id === "string" && body.id ? body.id : crypto.randomUUID();
+
+    if (!studentId || !Array.isArray(entryIds)) {
+      return json({ error: "studentId and entryIds are required" }, 400);
     }
 
-    const { data: student, error: studentError } = await supabase
-      .from("students")
-      .select("id, name, guardian_email, guardian_name, parent_digest_enabled, owner_id")
-      .eq("id", studentId)
-      .single();
+    const { data, error } = await supabase.rpc("build_parent_digest", {
+      target_student: studentId,
+      entry_ids: entryIds,
+      personal_note: textField(body?.personalNote),
+      intro: textField(body?.intro),
+      home_connection: textField(body?.homeConnection),
+      footer: textField(body?.footer),
+    });
 
-    if (studentError || !student) {
-      return json({ error: "Student not found" }, 404);
+    if (error || !data) {
+      const message = error?.message || "Could not build the parent digest";
+      const status = /not allowed|not signed in/i.test(message) ? 403 : 400;
+      return json({ error: message }, status);
     }
-    if (student.owner_id !== user.id) {
-      return json({ error: "Forbidden" }, 403);
-    }
-    if (student.parent_digest_enabled === false) {
-      return json({ error: "Parent digest is turned off for this student" }, 400);
-    }
-    if (!student.guardian_email) {
-      return json({ error: "Add a guardian email first" }, 400);
+
+    const digest = data as DigestPayload;
+    if (
+      digest.student_id !== studentId ||
+      !digest.guardian_email ||
+      !digest.html ||
+      !digest.owner_id ||
+      !Array.isArray(digest.entry_ids)
+    ) {
+      return json({ error: "Digest builder returned an incomplete payload" }, 500);
     }
 
     const apiKey = Deno.env.get("RESEND_API_KEY");
@@ -75,7 +98,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const firstName = (student.name || "your child").split(/\s+/)[0];
+    const firstName = (digest.student_name || "your child").split(/\s+/)[0];
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -84,9 +107,9 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from,
-        to: [student.guardian_email],
+        to: [digest.guardian_email],
         subject: `This week with ${firstName}: celebrations & notes`,
-        html,
+        html: digest.html,
       }),
     });
 
@@ -96,13 +119,13 @@ Deno.serve(async (req) => {
     }
 
     const sendRow = {
-      id: id || crypto.randomUUID(),
-      owner_id: user.id,
-      student_id: studentId,
-      entry_ids: entryIds,
+      id,
+      owner_id: digest.owner_id,
+      student_id: digest.student_id,
+      entry_ids: digest.entry_ids,
       mode,
-      html,
-      edited: !!edited,
+      html: digest.html,
+      edited,
       sent_at: new Date().toISOString(),
     };
 
@@ -121,6 +144,10 @@ Deno.serve(async (req) => {
     return json({ error: err instanceof Error ? err.message : "Send failed" }, 500);
   }
 });
+
+function textField(value: unknown) {
+  return typeof value === "string" ? value.slice(0, 4000) : "";
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

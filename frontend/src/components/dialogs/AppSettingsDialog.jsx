@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Settings, Mail, Zap, ShieldCheck } from "lucide-react";
+import { Settings, Mail, Zap, ShieldCheck, Coins, Lock, Building2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import { useClassroom } from "@/context/ClassroomContext";
 import { WEEK_DAYS, scheduleLabel } from "@/lib/digestSchedule";
 import { PointSystemSettings } from "@/components/dialogs/PointSystemSettings";
 import { PrivacySettings } from "@/components/dialogs/PrivacySettings";
-import { Coins, Lock } from "lucide-react";
+import { SchoolAccessPanel } from "@/components/dialogs/SchoolAccessPanel";
 
 const MODES = [
   { id: "auto", label: "Automatic Send", hint: "Digests go out on schedule", icon: Zap },
@@ -51,7 +51,7 @@ const ModePicker = ({ value, onChange }) => (
 );
 
 export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest" }) => {
-  const { digestSettings, updateDigestSettings, pointSettings, updatePointSettings, privacySettings, updatePrivacySettings } = useClassroom();
+  const { digestSettings, updateDigestSettings, pointSettings, updatePointSettings, privacySettings, updatePrivacySettings, role, students } = useClassroom();
   const [draft, setDraft] = useState(digestSettings);
   const [pointDraft, setPointDraft] = useState(pointSettings);
   const [privacyDraft, setPrivacyDraft] = useState(privacySettings);
@@ -103,19 +103,25 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest" })
           <DialogDescription>Configure how Classroom Pulse works for your classes.</DialogDescription>
         </DialogHeader>
         <Tabs defaultValue={initialTab}>
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="digest" data-testid="settings-tab-digest">
-              <Mail className="w-4 h-4 mr-1.5" /> Parent Digest
+              <Mail className="w-4 h-4 mr-1.5" /> Digest
             </TabsTrigger>
             <TabsTrigger value="points" data-testid="settings-tab-points">
-              <Coins className="w-4 h-4 mr-1.5" /> Point System
+              <Coins className="w-4 h-4 mr-1.5" /> Points
             </TabsTrigger>
             <TabsTrigger value="privacy" data-testid="settings-tab-privacy">
               <Lock className="w-4 h-4 mr-1.5" /> Privacy
             </TabsTrigger>
+            <TabsTrigger value="school" data-testid="settings-tab-school">
+              <Building2 className="w-4 h-4 mr-1.5" /> School
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="privacy" className="mt-4">
             <PrivacySettings draft={privacyDraft} set={setPrivacy} />
+          </TabsContent>
+          <TabsContent value="school" className="mt-4">
+            <SchoolAccessPanel role={role} students={students} />
           </TabsContent>
           <TabsContent value="points" className="mt-4">
             <PointSystemSettings draft={pointDraft} set={setPoint} />

@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { computeMasteryStreak, DEFAULT_MASTERY } from "@/components/goals/mastery";
 
-const TRIAL_LABEL = { independent: "Independent", prompted: "Prompted", refused: "Refused" };
+const TRIAL_LABEL = { independent: "Independent", prompted: "Prompted", refused: "N/A" };
 
 const longDate = (iso) => (iso ? format(new Date(iso), "MMM d, yyyy") : "—");
 const dayWord = (n) => `${n} ${Number(n) === 1 ? "day" : "days"}`;

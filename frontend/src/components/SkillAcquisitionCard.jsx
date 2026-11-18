@@ -28,7 +28,7 @@ import { TrialPanel } from "@/components/goals/TrialPanel";
 import { DEFAULT_MASTERY } from "@/components/goals/mastery";
 import { dayWord } from "@/components/goals/MasteryCriteria";
 
-const CHOICE_LABEL = { independent: "Ind", prompted: "Pmt", refused: "Ref" };
+const CHOICE_LABEL = { independent: "Ind", prompted: "Pmt", refused: "N/A" };
 
 const statusMeta = {
   Mastered: {

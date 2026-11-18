@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  GraduationCap,
   ChevronDown,
   UserCog,
   Layers,
@@ -45,15 +44,26 @@ export const TopBar = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [periodsOpen, setPeriodsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("digest");
 
-  const periods = user?.periods && user.periods.length > 0 ? user.periods : CLASS_SECTIONS.map((cs) => ({ id: cs.id, name: cs.label }));
+  const savedPeriods =
+    user?.periods && user.periods.length > 0
+      ? user.periods
+      : user && !user.isDemo
+        ? []
+        : CLASS_SECTIONS.map((cs) => ({ id: cs.id, name: cs.label }));
+  const periods =
+    classSection && !savedPeriods.some((p) => p.id === classSection)
+      ? [...savedPeriods, { id: classSection, name: savedPeriods.length ? "Saved class" : "Your class" }]
+      : savedPeriods.length
+        ? savedPeriods
+        : [{ id: classSection || "class", name: "Your class" }];
   const periodsKey = periods.map((p) => p.id).join("|");
 
-  // Keep classSection valid when periods list changes
+  // Only fill an empty selection. Switching away from a class that isn't in
+  // the profile list hides students who still belong to that class.
   useEffect(() => {
-    if (!periods.find((p) => p.id === classSection)) {
-      setClassSection(periods[0].id);
-    }
+    if (!classSection && periods[0]) setClassSection(periods[0].id);
   }, [periodsKey, classSection, setClassSection]); // eslint-disable-line react-hooks/exhaustive-deps -- periodsKey stands in for the periods array
 
   // Show the switcher whenever there is more than one period, regardless of school type,
@@ -74,9 +84,11 @@ export const TopBar = () => {
     >
       <div className="max-w-7xl mx-auto flex items-center gap-4 px-4 sm:px-8 py-3.5">
         <div data-testid="school-logo-brand" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-sm">
-            <GraduationCap className="w-5 h-5 text-white" strokeWidth={2.4} />
-          </div>
+          <img
+            src={`${process.env.PUBLIC_URL}/logo-mark.png`}
+            alt=""
+            className="w-10 h-10 rounded-xl object-cover shadow-sm"
+          />
           <div className="hidden sm:flex flex-col leading-tight">
             <span
               className="text-[15px] font-bold text-slate-900"
@@ -197,7 +209,10 @@ export const TopBar = () => {
             </DropdownMenuItem>
             <DropdownMenuItem
               data-testid="menu-app-settings"
-              onSelect={() => setSettingsOpen(true)}
+              onSelect={() => {
+                setSettingsTab("digest");
+                setSettingsOpen(true);
+              }}
             >
               <Settings className="w-4 h-4 mr-2" /> App Settings
             </DropdownMenuItem>
@@ -219,13 +234,28 @@ export const TopBar = () => {
             </DropdownMenuItem>
               </>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500">View as (demo)</DropdownMenuLabel>
-            {ACCESS_ROLES.map((r) => (
-              <DropdownMenuItem key={r.id} data-testid={`menu-view-as-${r.id}`} onSelect={() => setViewAsRole(r.id)}>
-                <Check className={`w-4 h-4 mr-2 ${role === r.id ? "text-teal-600" : "text-transparent"}`} /> {r.label}
+            {(role === "admin" || role === "case_manager") && (
+              <DropdownMenuItem
+                data-testid="menu-school-access"
+                onSelect={() => {
+                  setSettingsTab("school");
+                  setSettingsOpen(true);
+                }}
+              >
+                <Settings className="w-4 h-4 mr-2" /> School access
               </DropdownMenuItem>
-            ))}
+            )}
+            {user?.isDemo && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500">View as (demo)</DropdownMenuLabel>
+                {ACCESS_ROLES.map((r) => (
+                  <DropdownMenuItem key={r.id} data-testid={`menu-view-as-${r.id}`} onSelect={() => setViewAsRole(r.id)}>
+                    <Check className={`w-4 h-4 mr-2 ${role === r.id ? "text-teal-600" : "text-transparent"}`} /> {r.label}
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               data-testid="menu-logout"
@@ -264,7 +294,7 @@ export const TopBar = () => {
 
       <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} />
       <ManagePeriodsDialog open={periodsOpen} onOpenChange={setPeriodsOpen} />
-      <AppSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <AppSettingsDialog key={settingsTab} open={settingsOpen} onOpenChange={setSettingsOpen} initialTab={settingsTab} />
     </header>
   );
 };

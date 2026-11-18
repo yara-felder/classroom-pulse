@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronRight } from "lucide-react";
 import { STATUS_GROUPS } from "@/lib/celebrations";
+import { StudentAvatar } from "@/components/StudentAvatar";
 
 const TONES = {
   emerald: { head: "bg-emerald-50 border-emerald-200 text-emerald-800", dot: "bg-emerald-500" },
@@ -54,7 +55,7 @@ export const ProgressDistribution = ({ groups, onOpenStudent, hideNames = false 
                         onClick={() => onOpenStudent(s)}
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
                       >
-                        <img src={s.avatar} alt={s.name} className="w-8 h-8 rounded-full object-cover bg-slate-100" />
+                        <StudentAvatar name={s.name} id={s.id} size="sm" />
                         <span className="flex-1 min-w-0 text-sm font-semibold text-slate-800 truncate">{s.name}</span>
                         <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                       </button>
