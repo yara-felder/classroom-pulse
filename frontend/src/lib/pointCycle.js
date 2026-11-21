@@ -88,11 +88,22 @@ export const countLogsOnDay = (students, logs, date) => {
   };
 };
 
-export const loggedWeekSeries = (students, logs) => {
-  const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
+export const weekdayBounds = (weekOffset = 0, now = new Date()) => {
+  const monday = addDays(startOfWeek(startOfDay(now), { weekStartsOn: 1 }), weekOffset * 7);
+  const friday = addDays(monday, 4);
+  return {
+    start: monday,
+    end: friday,
+    startIso: format(monday, "yyyy-MM-dd"),
+    endIso: format(friday, "yyyy-MM-dd"),
+  };
+};
+
+export const loggedWeekSeries = (students, logs, weekOffset = 0) => {
+  const { start } = weekdayBounds(weekOffset);
   return [0, 1, 2, 3, 4].map((offset) => {
-    const date = addDays(monday, offset);
-    return { date: format(date, "M/d"), ...countLogsOnDay(students, logs, date) };
+    const date = addDays(start, offset);
+    return { date: format(date, "MM/dd"), weekday: format(date, "yyyy-MM-dd"), ...countLogsOnDay(students, logs, date) };
   });
 };
 

@@ -9,12 +9,13 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { addDays, format, startOfDay, startOfWeek } from "date-fns";
+import { addDays, format } from "date-fns";
 import { AlertTriangle, School, Sparkles, TrendingUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useClassroom } from "@/context/ClassroomContext";
 import { CycleHeader } from "@/components/analytics/CycleHeader";
-import { cycleBounds } from "@/lib/pointCycle";
+import { WeekNavigator } from "@/components/analytics/WeekNavigator";
+import { weekdayBounds } from "@/lib/pointCycle";
 import {
   chartSeries,
   currentWeekdays,
@@ -30,18 +31,6 @@ const LEGEND_STYLE = { fontSize: 12, paddingTop: 16 };
 const BAR_RADIUS = [6, 6, 0, 0];
 const OUTFIT = { fontFamily: "Outfit" };
 const FREDOKA = { fontFamily: "Fredoka" };
-
-const cycleDates = (settings) => {
-  const bounds = cycleBounds(settings);
-  const start = startOfDay(bounds.start);
-  const fallbackEnd = addDays(startOfDay(bounds.start), 4);
-  const end = startOfDay(bounds.end || fallbackEnd);
-  const capped = end > addDays(start, 120) ? addDays(start, 120) : end;
-  return {
-    start: format(start, "yyyy-MM-dd"),
-    end: format(capped < start ? start : capped, "yyyy-MM-dd"),
-  };
-};
 
 const Kpi = ({ icon: Icon, label, value, tone, testid }) => (
   <div className="bg-white border border-slate-200 rounded-2xl p-4" data-testid={testid}>
@@ -78,8 +67,9 @@ const WeekBar = ({ days, testid = "classroom-week-bar" }) => {
 
 export const AdminBehaviorAnalytics = () => {
   const { user } = useAuth();
-  const { pointSettings, students, logs } = useClassroom();
-  const dates = useMemo(() => cycleDates(pointSettings), [pointSettings]);
+  const { students, logs } = useClassroom();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const week = useMemo(() => weekdayBounds(weekOffset), [weekOffset]);
   const [classrooms, setClassrooms] = useState([]);
   const [selectedId, setSelectedId] = useState("all");
   const [status, setStatus] = useState(user?.isDemo ? "ready" : "loading");
@@ -87,13 +77,13 @@ export const AdminBehaviorAnalytics = () => {
   useEffect(() => {
     if (!user?.id) return undefined;
     if (user.isDemo) {
-      setClassrooms(demoClassrooms(user, students, logs));
+      setClassrooms(demoClassrooms(user, students, logs, weekOffset));
       setStatus("ready");
       return undefined;
     }
     let cancelled = false;
     setStatus("loading");
-    loadSchoolAnalytics(user.id, dates.start, dates.end)
+    loadSchoolAnalytics(user.id, week.startIso, week.endIso)
       .then((rows) => {
         if (cancelled) return;
         setClassrooms(rows);
@@ -107,7 +97,7 @@ export const AdminBehaviorAnalytics = () => {
     return () => {
       cancelled = true;
     };
-  }, [user, dates.start, dates.end, students, logs]);
+  }, [user, week.startIso, week.endIso, weekOffset, students, logs]);
 
   useEffect(() => {
     if (selectedId !== "all" && !classrooms.some((classroom) => classroom.teacherId === selectedId)) {
@@ -119,8 +109,8 @@ export const AdminBehaviorAnalytics = () => {
   const totals = sumDays(visible.flatMap((classroom) => classroom.days));
   const trend = chartSeries(visible);
   const emptyWeek = [0, 1, 2, 3, 4].map((offset) => {
-    const date = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), offset);
-    return { date: format(date, "M/d"), positive: 0, support: 0 };
+    const date = addDays(week.start, offset);
+    return { date: format(date, "MM/dd"), positive: 0, support: 0 };
   });
   const chart = trend.length ? trend : emptyWeek;
 
@@ -159,9 +149,12 @@ export const AdminBehaviorAnalytics = () => {
             </FilterPill>
           ))}
         </div>
-        <h3 className="text-base font-bold text-slate-900 mt-3" style={OUTFIT}>
-          Weekly trend · {chart[0].date} to {chart[chart.length - 1].date}
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+          <h3 className="text-base font-bold text-slate-900" style={OUTFIT} data-testid="weekly-trend-range">
+            Weekly trend · {chart[0].date} to {chart[chart.length - 1].date}
+          </h3>
+          <WeekNavigator weekOffset={weekOffset} onChange={setWeekOffset} />
+        </div>
         <p className="text-[11px] text-slate-500 font-medium mt-0.5">Positive vs Support · Weekdays only</p>
         <div className="h-72 mt-4">
           <ResponsiveContainer width="100%" height="100%">

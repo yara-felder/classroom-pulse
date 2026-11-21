@@ -17,7 +17,8 @@ import { CycleHeader } from "@/components/analytics/CycleHeader";
 import { RecentCelebrations } from "@/components/analytics/RecentCelebrations";
 import { ProgressDistribution } from "@/components/analytics/ProgressDistribution";
 import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
-import { cycleBounds, loggedRange, loggedWeekSeries } from "@/lib/pointCycle";
+import { loggedRange, loggedWeekSeries, weekdayBounds } from "@/lib/pointCycle";
+import { WeekNavigator } from "@/components/analytics/WeekNavigator";
 import { buildCelebrations, studentStatusGroup } from "@/lib/celebrations";
 import { namesHidden } from "@/lib/rbac";
 import { AdminBehaviorAnalytics } from "@/components/analytics/AdminBehaviorAnalytics";
@@ -34,13 +35,14 @@ export default function AnalyticsPage() {
 }
 
 function TeacherBehaviorAnalytics({ classroom }) {
-  const { students, logs, classSection, pointSettings, skillsByStudent, iepGoalsByStudent, markChecklist, role, privacySettings, can } = classroom;
+  const { students, logs, classSection, skillsByStudent, iepGoalsByStudent, markChecklist, role, privacySettings, can } = classroom;
   useEffect(() => {
     markChecklist("goal");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mark the checklist step once on first visit
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   // Only include students in the currently-active period so Home, Roster,
   // and Analytics stay in sync on the exact same slice.
@@ -55,16 +57,18 @@ function TeacherBehaviorAnalytics({ classroom }) {
   const named = role === "case_manager" ? periodStudents.filter((s) => s.iep || s.plan504) : periodStudents;
   const hideNames = namesHidden(role, privacySettings);
 
+  const week = useMemo(() => weekdayBounds(weekOffset), [weekOffset]);
+
   const stats = useMemo(() => {
-    const b = cycleBounds(pointSettings);
-    const { positive, support } = loggedRange(periodStudents, logs, b.start, b.end);
+    const { positive, support } = loggedRange(periodStudents, logs, week.start, week.end);
     const ratio = positive + support === 0 ? 100 : Math.round((positive / (positive + support)) * 100);
     return { positive, support, ratio };
-  }, [logs, periodStudents, pointSettings]);
+  }, [logs, periodStudents, week]);
 
   const goal = useClassGoal(periodStudents);
+  const goalPct = Math.min(100, Math.round((stats.positive / Math.max(1, goal.target)) * 100));
 
-  const trend = useMemo(() => loggedWeekSeries(periodStudents, logs), [logs, periodStudents]);
+  const trend = useMemo(() => loggedWeekSeries(periodStudents, logs, weekOffset), [logs, periodStudents, weekOffset]);
 
   const celebrations = useMemo(
     () => buildCelebrations(hideNames ? [] : named, skillsByStudent, iepGoalsByStudent),
@@ -76,11 +80,11 @@ function TeacherBehaviorAnalytics({ classroom }) {
     [...named]
       .sort((a, b) => a.name.localeCompare(b.name))
       .forEach((s) => {
-        const g = studentStatusGroup(s, skillsByStudent[s.id], iepGoalsByStudent[s.id], logs, cycleBounds(pointSettings));
+        const g = studentStatusGroup(s, skillsByStudent[s.id], iepGoalsByStudent[s.id], logs, week);
         (out[g] = out[g] || []).push(s);
       });
     return out;
-  }, [named, skillsByStudent, iepGoalsByStudent, logs, pointSettings]);
+  }, [named, skillsByStudent, iepGoalsByStudent, logs, week]);
 
   const openStudent = (s) => {
     setSelectedStudent(s);
@@ -108,7 +112,12 @@ function TeacherBehaviorAnalytics({ classroom }) {
 
       <div className="mt-5 flex items-stretch gap-2">
         <div className="flex-1">
-          <ClassGoalBanner periodStudents={periodStudents} testid="analytics-class-goal" />
+          <ClassGoalBanner
+            periodStudents={periodStudents}
+            progress={stats.positive}
+            rangeLabel={`${trend[0].date} – ${trend[trend.length - 1].date}`}
+            testid="analytics-class-goal"
+          />
         </div>
         {can("settings") && (
         <button
@@ -158,9 +167,9 @@ function TeacherBehaviorAnalytics({ classroom }) {
             <span className="text-[11px] font-bold uppercase tracking-wider">Class Goal</span>
           </div>
           <div className="text-3xl font-extrabold text-slate-900 mt-1" style={{ fontFamily: "Fredoka" }} data-testid="stat-class-goal-pct">
-            {goal.pct}%
+            {goalPct}%
           </div>
-          <div className="text-xs text-slate-500">{goal.progress} of {goal.target} moments</div>
+          <div className="text-xs text-slate-500" data-testid="stat-class-goal-count">{stats.positive} of {goal.target} moments</div>
         </div>
       </div>
 
@@ -170,9 +179,12 @@ function TeacherBehaviorAnalytics({ classroom }) {
           className="bg-white border border-slate-200 rounded-2xl p-5 lg:col-span-2"
           data-testid="chart-weekly-trend"
         >
-          <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit" }}>
-            Weekly trend · {trend[0].date} to {trend[trend.length - 1].date}
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit" }} data-testid="weekly-trend-range">
+              Weekly trend · {trend[0].date} to {trend[trend.length - 1].date}
+            </h3>
+            <WeekNavigator weekOffset={weekOffset} onChange={setWeekOffset} />
+          </div>
           <p className="text-[11px] text-slate-500 font-medium mt-0.5">
             Positive vs Support · Weekdays only
           </p>

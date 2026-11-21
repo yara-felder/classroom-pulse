@@ -1,14 +1,12 @@
 import { deriveIepStatus } from "@/lib/goalSummaries";
 import { DEFAULT_MASTERY, computeMasteryStreak } from "@/components/goals/mastery";
-import { sumRange } from "@/lib/pointCycle";
+import { loggedRange } from "@/lib/pointCycle";
 
 export const STATUS_GROUPS = [
   { id: "thriving", label: "Thriving & Growing", hint: "Demonstrating consistent positive skills and independence", tone: "emerald" },
   { id: "building", label: "Building Momentum", hint: "Actively practicing new skills and working toward goals", tone: "sky" },
   { id: "focus", label: "Focus & Strategy Needed", hint: "Requires environmental tweaks or targeted skill instruction", tone: "amber" },
 ];
-
-const H48 = 48 * 60 * 60 * 1000;
 
 // Stable = mastered, or not needing support and the last 5 days are not trending below the 5 before.
 const goalStable = (item, status) => {
@@ -20,15 +18,12 @@ const goalStable = (item, status) => {
   return avg(h.slice(-5)) >= avg(h.slice(-10, -5)) - 5;
 };
 
-export const studentStatusGroup = (student, skills, iepGoals, logs, bounds, now = Date.now()) => {
+export const studentStatusGroup = (student, skills, iepGoals, logs, bounds) => {
   const hasPlan = !!(student.iep || student.plan504);
   const goals = hasPlan ? iepGoals || [] : [];
-  const recentSupport = logs.filter(
-    (l) => l.studentId === student.id && l.type === "support" && now - new Date(l.timestamp).getTime() <= H48
-  ).length;
+  const { positive, support } = loggedRange([student], logs, bounds.start, bounds.end);
   const iepNeedsStrategy = goals.some((g) => deriveIepStatus(g) === "Needs Support");
-  if (recentSupport >= 3 || iepNeedsStrategy) return "focus";
-  const { positive, support } = sumRange([student], logs, bounds.start, bounds.end);
+  if (support >= 3 || iepNeedsStrategy) return "focus";
   const ratio = positive + support === 0 ? 0 : positive / (positive + support);
   const stable =
     (skills || []).every((sk) => goalStable(sk, sk.status)) &&

@@ -1,6 +1,6 @@
 import { addDays, format, startOfWeek } from "date-fns";
 import { supabase } from "@/lib/supabase";
-import { countLogsOnDay } from "@/lib/pointCycle";
+import { countLogsOnDay, weekdayBounds } from "@/lib/pointCycle";
 
 const iso = (date) => format(date, "yyyy-MM-dd");
 
@@ -34,7 +34,7 @@ export const groupAnalyticsRows = (rows) => {
     const weekday = typeof row.weekday === "string" ? row.weekday.slice(0, 10) : iso(new Date(row.weekday));
     byTeacher.get(teacherId).days.push({
       weekday,
-      label: format(new Date(`${weekday}T12:00:00`), "M/d"),
+      label: format(new Date(`${weekday}T12:00:00`), "MM/dd"),
       positive: Number(row.positive_count) || 0,
       support: Number(row.support_count) || 0,
     });
@@ -69,14 +69,14 @@ export const chartSeries = (classrooms) => {
   return [...byDay.values()].sort((a, b) => a.weekday.localeCompare(b.weekday));
 };
 
-export const demoClassrooms = (user, students, logs) => {
-  const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
+export const demoClassrooms = (user, students, logs, weekOffset = 0) => {
+  const { start } = weekdayBounds(weekOffset);
   const days = [0, 1, 2, 3, 4].map((offset) => {
-    const date = addDays(monday, offset);
+    const date = addDays(start, offset);
     const totals = countLogsOnDay(students, logs, date);
     return {
       weekday: iso(date),
-      label: format(date, "M/d"),
+      label: format(date, "MM/dd"),
       positive: totals.positive,
       support: totals.support,
     };
