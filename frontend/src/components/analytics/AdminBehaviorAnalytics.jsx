@@ -48,17 +48,20 @@ const Kpi = ({ icon: Icon, label, value, tone, testid }) => (
 const WeekBar = ({ days, testid = "classroom-week-bar" }) => {
   const max = Math.max(1, ...days.map((day) => day.positive + day.support));
   return (
-    <div className="flex items-end gap-1 h-10" data-testid={testid}>
+    <div className="flex items-end gap-1" data-testid={testid}>
       {days.map((day) => {
         const total = day.positive + day.support;
         const height = Math.max(8, Math.round((total / max) * 100));
         const positiveShare = total ? (day.positive / total) * 100 : 0;
         return (
-          <div key={day.weekday} className="flex-1 h-full flex flex-col justify-end" title={`${day.label}: ${day.positive} positive, ${day.support} support`}>
-            <div className="w-full rounded-sm overflow-hidden flex flex-col justify-end bg-slate-100" style={{ height: `${height}%` }}>
-              <div className="bg-amber-400" style={{ height: `${100 - positiveShare}%` }} />
-              <div className="bg-emerald-500" style={{ height: `${positiveShare}%` }} />
+          <div key={day.weekday} className="flex-1 min-w-0 flex flex-col items-center gap-1" title={`${day.label}: ${day.positive} positive, ${day.support} support`}>
+            <div className="w-full h-10 flex flex-col justify-end">
+              <div className="w-full rounded-sm overflow-hidden flex flex-col justify-end bg-slate-100" style={{ height: `${height}%` }}>
+                <div className="bg-amber-400" style={{ height: `${100 - positiveShare}%` }} />
+                <div className="bg-emerald-500" style={{ height: `${positiveShare}%` }} />
+              </div>
             </div>
+            <span className="text-[11px] leading-none text-slate-400 tabular-nums">{day.label}</span>
           </div>
         );
       })}
@@ -190,8 +193,8 @@ export const AdminBehaviorAnalytics = () => {
         <h3 className="text-base font-bold text-slate-900" style={OUTFIT}>
           Weekly Trends by Classroom
         </h3>
-        <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-          Counts only. Student names stay with each teacher.
+        <p className="text-[11px] text-slate-500 font-medium mt-0.5" data-testid="classroom-trends-subtitle">
+          Counts only · {format(week.start, "MMM d")} – {format(week.end, "MMM d")}. Student names stay with each teacher.
         </p>
         {status === "loading" && <p className="text-sm text-slate-500 mt-4">Loading classrooms…</p>}
         {status === "error" && (
