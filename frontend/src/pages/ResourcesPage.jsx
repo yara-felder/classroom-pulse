@@ -3,6 +3,8 @@ import { Eye, BookMarked, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { RESOURCES, RESOURCE_FILTERS } from "@/data/mockData";
 import { ResourcePreviewModal } from "@/components/resources/ResourcePreviewModal";
+import { AdminLeadershipHub } from "@/components/resources/AdminLeadershipHub";
+import { useClassroom } from "@/context/ClassroomContext";
 
 const ctaLabel = (tag) =>
   tag === "Script" ? "Get script" : tag === "Visual" ? "Get visual" : "Get printable";
@@ -53,6 +55,12 @@ const colorMap = {
 };
 
 export default function ResourcesPage() {
+  const { role } = useClassroom();
+  if (role === "admin") return <AdminLeadershipHub />;
+  return <TeacherResources />;
+}
+
+function TeacherResources() {
   const [q, setQ] = useState("");
   const [active, setActive] = useState(null);
   const [filter, setFilter] = useState("All");
