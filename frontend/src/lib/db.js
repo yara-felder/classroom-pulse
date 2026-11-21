@@ -73,6 +73,8 @@ export const studentToRow = (s, ownerId) => ({
   created_at: s.createdAt || new Date().toISOString(),
 });
 
+export const localCalendarDate = (date = new Date()) => date.toLocaleDateString("en-CA");
+
 export const mapLog = (row) => ({
   id: row.id,
   studentId: row.student_id,
@@ -83,6 +85,7 @@ export const mapLog = (row) => ({
   notifyParent: !!row.notify_parent,
   includeInDigest: row.include_in_digest ?? !!row.notify_parent,
   timestamp: row.timestamp,
+  logDate: row.log_date || null,
 });
 
 export const logToRow = (l, ownerId) => ({
@@ -96,6 +99,7 @@ export const logToRow = (l, ownerId) => ({
   notify_parent: !!l.notifyParent,
   include_in_digest: l.includeInDigest ?? !!l.notifyParent,
   timestamp: l.timestamp || new Date().toISOString(),
+  log_date: l.logDate || localCalendarDate(),
 });
 
 export const mapSkill = (row) => ({

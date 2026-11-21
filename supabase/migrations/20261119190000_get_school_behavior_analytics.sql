@@ -1,6 +1,13 @@
 -- School-wide weekday totals for an administrator.
 -- Returns one row per linked teacher per weekday. No student names or ids.
 -- Apply after 20261117204000_lock_down_rls_by_role.sql.
+-- log_date is the teacher's local calendar day. Older rows fall back to Pacific time.
+
+alter table public.behavior_logs add column if not exists log_date date;
+
+update public.behavior_logs
+set log_date = (timestamp at time zone 'America/Los_Angeles')::date
+where log_date is null;
 
 create or replace function public.get_school_behavior_analytics(
   p_school_id uuid,
@@ -66,7 +73,7 @@ begin
   left join public.behavior_logs b
     on b.owner_id = t.user_id
    and b.school_id = p_school_id
-   and (b.timestamp at time zone 'UTC')::date = days.weekday
+   and coalesce(b.log_date, (b.timestamp at time zone 'America/Los_Angeles')::date) = days.weekday
    and b.type in ('positive', 'support')
   group by t.user_id, t.teacher_name, t.teacher_title, days.weekday
   order by t.teacher_name, days.weekday;

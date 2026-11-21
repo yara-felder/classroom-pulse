@@ -69,6 +69,48 @@ export const mockDaily = (studentId, date) => {
 
 const sameDay = (iso, date) => format(new Date(iso), "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
 
+export const logCalendarDate = (log) => {
+  if (log?.logDate) return String(log.logDate).slice(0, 10);
+  if (!log?.timestamp) return "";
+  const parsed = new Date(log.timestamp);
+  if (Number.isNaN(parsed.getTime())) return String(log.timestamp).slice(0, 10);
+  return parsed.toLocaleDateString("en-CA");
+};
+
+export const countLogsOnDay = (students, logs, date) => {
+  if (isWeekend(date) || startOfDay(date) > startOfDay(new Date())) return { positive: 0, support: 0 };
+  const key = format(date, "yyyy-MM-dd");
+  const ids = new Set(students.map((student) => student.id));
+  const dayLogs = logs.filter((log) => ids.has(log.studentId) && logCalendarDate(log) === key);
+  return {
+    positive: dayLogs.filter((log) => log.type === "positive").length,
+    support: dayLogs.filter((log) => log.type === "support").length,
+  };
+};
+
+export const loggedWeekSeries = (students, logs) => {
+  const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
+  return [0, 1, 2, 3, 4].map((offset) => {
+    const date = addDays(monday, offset);
+    return { date: format(date, "M/d"), ...countLogsOnDay(students, logs, date) };
+  });
+};
+
+export const loggedRange = (students, logs, start, end) => {
+  const last = end && end < new Date() ? end : new Date();
+  if (startOfDay(start) > startOfDay(last)) return { positive: 0, support: 0 };
+  const days = eachDayOfInterval({ start: startOfDay(start), end: startOfDay(last) });
+  return days.reduce(
+    (acc, date) => {
+      const totals = countLogsOnDay(students, logs, date);
+      acc.positive += totals.positive;
+      acc.support += totals.support;
+      return acc;
+    },
+    { positive: 0, support: 0 }
+  );
+};
+
 export const studentDay = (studentId, date, logs, since) => {
   if (isWeekend(date) || startOfDay(date) > startOfDay(new Date())) return { positive: 0, support: 0 };
   const base = since && startOfDay(date) <= startOfDay(new Date(since)) ? { positive: 0, support: 0 } : mockDaily(studentId, date);

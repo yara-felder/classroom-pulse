@@ -16,6 +16,7 @@ import {
   patchStudents,
   deleteStudentRow,
   insertLog,
+  localCalendarDate,
   patchLog,
   upsertSkill,
   upsertIepGoal,
@@ -710,6 +711,7 @@ export const ClassroomProvider = ({ children }) => {
       notifyParent: !!notifyParent,
       includeInDigest: !!notifyParent,
       timestamp: new Date().toISOString(),
+      logDate: localCalendarDate(),
     };
     setLogs((prev) => [log, ...prev]);
     if (persistLive) insertLog(log, ownerId).catch(catchPersist);
@@ -735,6 +737,7 @@ export const ClassroomProvider = ({ children }) => {
       notifyParent: !!notifyParent,
       includeInDigest: !!notifyParent,
       timestamp: new Date().toISOString(),
+      logDate: localCalendarDate(),
     };
     setLogs((prev) => [log, ...prev]);
     if (persistLive) insertLog(log, ownerId).catch(catchPersist);
@@ -751,6 +754,7 @@ export const ClassroomProvider = ({ children }) => {
       notifyParent: !!notifyParent,
       includeInDigest: !!notifyParent,
       timestamp: new Date().toISOString(),
+      logDate: localCalendarDate(),
     };
     setLogs((prev) => [log, ...prev]);
     if (persistLive) insertLog(log, ownerId).catch(catchPersist);

@@ -17,7 +17,7 @@ import { CycleHeader } from "@/components/analytics/CycleHeader";
 import { RecentCelebrations } from "@/components/analytics/RecentCelebrations";
 import { ProgressDistribution } from "@/components/analytics/ProgressDistribution";
 import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
-import { cycleBounds, sumRange, thisWeekSeries } from "@/lib/pointCycle";
+import { cycleBounds, loggedRange, loggedWeekSeries } from "@/lib/pointCycle";
 import { buildCelebrations, studentStatusGroup } from "@/lib/celebrations";
 import { namesHidden } from "@/lib/rbac";
 import { AdminBehaviorAnalytics } from "@/components/analytics/AdminBehaviorAnalytics";
@@ -57,14 +57,14 @@ function TeacherBehaviorAnalytics({ classroom }) {
 
   const stats = useMemo(() => {
     const b = cycleBounds(pointSettings);
-    const { positive, support } = sumRange(periodStudents, logs, b.start, b.end);
+    const { positive, support } = loggedRange(periodStudents, logs, b.start, b.end);
     const ratio = positive + support === 0 ? 100 : Math.round((positive / (positive + support)) * 100);
     return { positive, support, ratio };
   }, [logs, periodStudents, pointSettings]);
 
   const goal = useClassGoal(periodStudents);
 
-  const trend = useMemo(() => thisWeekSeries(periodStudents, logs), [logs, periodStudents]);
+  const trend = useMemo(() => loggedWeekSeries(periodStudents, logs), [logs, periodStudents]);
 
   const celebrations = useMemo(
     () => buildCelebrations(hideNames ? [] : named, skillsByStudent, iepGoalsByStudent),

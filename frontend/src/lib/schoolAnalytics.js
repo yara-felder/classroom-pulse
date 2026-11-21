@@ -1,6 +1,6 @@
 import { addDays, format, startOfWeek } from "date-fns";
 import { supabase } from "@/lib/supabase";
-import { sumRange } from "@/lib/pointCycle";
+import { countLogsOnDay } from "@/lib/pointCycle";
 
 const iso = (date) => format(date, "yyyy-MM-dd");
 
@@ -73,7 +73,7 @@ export const demoClassrooms = (user, students, logs) => {
   const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
   const days = [0, 1, 2, 3, 4].map((offset) => {
     const date = addDays(monday, offset);
-    const totals = sumRange(students, logs, date, date);
+    const totals = countLogsOnDay(students, logs, date);
     return {
       weekday: iso(date),
       label: format(date, "M/d"),

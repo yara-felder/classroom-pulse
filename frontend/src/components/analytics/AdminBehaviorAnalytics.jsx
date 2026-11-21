@@ -9,7 +9,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { addDays, format, startOfDay } from "date-fns";
+import { addDays, format, startOfDay, startOfWeek } from "date-fns";
 import { AlertTriangle, School, Sparkles, TrendingUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useClassroom } from "@/context/ClassroomContext";
@@ -118,7 +118,11 @@ export const AdminBehaviorAnalytics = () => {
   const visible = selectedId === "all" ? classrooms : classrooms.filter((classroom) => classroom.teacherId === selectedId);
   const totals = sumDays(visible.flatMap((classroom) => classroom.days));
   const trend = chartSeries(visible);
-  const chart = trend.length ? trend : [{ date: "—", positive: 0, support: 0 }];
+  const emptyWeek = [0, 1, 2, 3, 4].map((offset) => {
+    const date = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), offset);
+    return { date: format(date, "M/d"), positive: 0, support: 0 };
+  });
+  const chart = trend.length ? trend : emptyWeek;
 
   return (
     <div className="pt-6 pb-4 px-4 sm:px-8 max-w-7xl mx-auto" data-testid="admin-behavior-analytics">
@@ -156,7 +160,7 @@ export const AdminBehaviorAnalytics = () => {
           ))}
         </div>
         <h3 className="text-base font-bold text-slate-900 mt-3" style={OUTFIT}>
-          Weekly trend{chart[0].date !== "—" ? ` · ${chart[0].date} to ${chart[chart.length - 1].date}` : ""}
+          Weekly trend · {chart[0].date} to {chart[chart.length - 1].date}
         </h3>
         <p className="text-[11px] text-slate-500 font-medium mt-0.5">Positive vs Support · Weekdays only</p>
         <div className="h-72 mt-4">

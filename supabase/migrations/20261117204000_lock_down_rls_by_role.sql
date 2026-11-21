@@ -1411,11 +1411,11 @@ create trigger on_auth_user_created
 -- ---------------------------------------------------------------------------
 -- Roster view for admins when that teacher opted into full visibility.
 -- Default privacy is aggregate: admin_school_overview returns counts only.
--- security_invoker false: the WHERE clause is the authorization check.
+-- security_invoker true: the caller's RLS applies, so the view is not unrestricted.
 -- ---------------------------------------------------------------------------
 
 create or replace view public.admin_roster
-with (security_barrier = true, security_invoker = false) as
+with (security_barrier = true, security_invoker = true) as
 select
   s.id,
   s.school_id,
@@ -1538,6 +1538,10 @@ create policy students_caseload_update on public.students
 create policy students_admin_update on public.students
   for update using (public.is_school_admin(school_id))
   with check (public.is_school_admin(school_id));
+
+drop policy if exists students_admin_select on public.students;
+create policy students_admin_select on public.students
+  for select using (public.admin_can_see_student(id));
 
 drop policy if exists "logs_own" on public.behavior_logs;
 drop policy if exists logs_owner_all on public.behavior_logs;
