@@ -20,6 +20,7 @@ import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
 import { cycleBounds, sumRange, thisWeekSeries } from "@/lib/pointCycle";
 import { buildCelebrations, studentStatusGroup } from "@/lib/celebrations";
 import { namesHidden } from "@/lib/rbac";
+import { AdminBehaviorAnalytics } from "@/components/analytics/AdminBehaviorAnalytics";
 
 const CHART_MARGIN = { top: 6, right: 8, left: 0, bottom: 24 };
 const TOOLTIP_STYLE = { background: "white", border: "1px solid #E2E8F0", borderRadius: 12, fontSize: 12 };
@@ -27,7 +28,13 @@ const LEGEND_STYLE = { fontSize: 12, paddingTop: 16 };
 const BAR_RADIUS = [6, 6, 0, 0];
 
 export default function AnalyticsPage() {
-  const { students, logs, classSection, pointSettings, skillsByStudent, iepGoalsByStudent, markChecklist, role, privacySettings, can } = useClassroom();
+  const classroom = useClassroom();
+  if (classroom.role === "admin") return <AdminBehaviorAnalytics />;
+  return <TeacherBehaviorAnalytics classroom={classroom} />;
+}
+
+function TeacherBehaviorAnalytics({ classroom }) {
+  const { students, logs, classSection, pointSettings, skillsByStudent, iepGoalsByStudent, markChecklist, role, privacySettings, can } = classroom;
   useEffect(() => {
     markChecklist("goal");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mark the checklist step once on first visit
