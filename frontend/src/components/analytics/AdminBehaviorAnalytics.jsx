@@ -15,12 +15,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useClassroom } from "@/context/ClassroomContext";
 import { CycleHeader } from "@/components/analytics/CycleHeader";
 import { WeekNavigator } from "@/components/analytics/WeekNavigator";
-import { weekdayBounds } from "@/lib/pointCycle";
+import { earliestLogIso, minWeekOffsetForDate, weekdayBounds } from "@/lib/pointCycle";
 import {
   chartSeries,
   currentWeekdays,
   demoClassrooms,
   loadSchoolAnalytics,
+  loadSchoolEarliestLogDate,
   ratioOf,
   sumDays,
 } from "@/lib/schoolAnalytics";
@@ -69,10 +70,24 @@ export const AdminBehaviorAnalytics = () => {
   const { user } = useAuth();
   const { students, logs } = useClassroom();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [schoolEarliestIso, setSchoolEarliestIso] = useState(null);
   const week = useMemo(() => weekdayBounds(weekOffset), [weekOffset]);
+  const earliestIso = user?.isDemo ? earliestLogIso(logs) : schoolEarliestIso;
+  const minWeekOffset = useMemo(() => minWeekOffsetForDate(earliestIso), [earliestIso]);
   const [classrooms, setClassrooms] = useState([]);
   const [selectedId, setSelectedId] = useState("all");
   const [status, setStatus] = useState(user?.isDemo ? "ready" : "loading");
+
+  useEffect(() => {
+    if (!user?.id || user.isDemo) return undefined;
+    let cancelled = false;
+    loadSchoolEarliestLogDate(user.id).then((iso) => {
+      if (!cancelled) setSchoolEarliestIso(iso);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user?.id) return undefined;
@@ -151,9 +166,9 @@ export const AdminBehaviorAnalytics = () => {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
           <h3 className="text-base font-bold text-slate-900" style={OUTFIT} data-testid="weekly-trend-range">
-            Weekly trend · {chart[0].date} to {chart[chart.length - 1].date}
+            Weekly trend
           </h3>
-          <WeekNavigator weekOffset={weekOffset} onChange={setWeekOffset} />
+          <WeekNavigator weekOffset={weekOffset} minWeekOffset={minWeekOffset} onChange={setWeekOffset} />
         </div>
         <p className="text-[11px] text-slate-500 font-medium mt-0.5">Positive vs Support · Weekdays only</p>
         <div className="h-72 mt-4">

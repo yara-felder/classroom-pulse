@@ -91,6 +91,21 @@ export const demoClassrooms = (user, students, logs, weekOffset = 0) => {
   ];
 };
 
+export const loadSchoolEarliestLogDate = async (userId) => {
+  const membership = await supabase
+    .from("school_memberships")
+    .select("school_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (membership.error || !membership.data?.school_id) return null;
+
+  const earliest = await supabase.rpc("get_school_earliest_log_date", {
+    p_school_id: membership.data.school_id,
+  });
+  if (earliest.error || !earliest.data) return null;
+  return String(earliest.data).slice(0, 10);
+};
+
 export const loadSchoolAnalytics = async (userId, cycleStart, cycleEnd) => {
   const membership = await supabase
     .from("school_memberships")

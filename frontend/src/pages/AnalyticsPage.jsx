@@ -17,7 +17,7 @@ import { CycleHeader } from "@/components/analytics/CycleHeader";
 import { RecentCelebrations } from "@/components/analytics/RecentCelebrations";
 import { ProgressDistribution } from "@/components/analytics/ProgressDistribution";
 import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
-import { loggedRange, loggedWeekSeries, weekdayBounds } from "@/lib/pointCycle";
+import { earliestLogIso, loggedRange, loggedWeekSeries, minWeekOffsetForDate, weekdayBounds } from "@/lib/pointCycle";
 import { WeekNavigator } from "@/components/analytics/WeekNavigator";
 import { buildCelebrations, studentStatusGroup } from "@/lib/celebrations";
 import { namesHidden } from "@/lib/rbac";
@@ -57,6 +57,7 @@ function TeacherBehaviorAnalytics({ classroom }) {
   const named = role === "case_manager" ? periodStudents.filter((s) => s.iep || s.plan504) : periodStudents;
   const hideNames = namesHidden(role, privacySettings);
 
+  const minWeekOffset = useMemo(() => minWeekOffsetForDate(earliestLogIso(logs)), [logs]);
   const week = useMemo(() => weekdayBounds(weekOffset), [weekOffset]);
 
   const stats = useMemo(() => {
@@ -181,9 +182,9 @@ function TeacherBehaviorAnalytics({ classroom }) {
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit" }} data-testid="weekly-trend-range">
-              Weekly trend · {trend[0].date} to {trend[trend.length - 1].date}
+              Weekly trend
             </h3>
-            <WeekNavigator weekOffset={weekOffset} onChange={setWeekOffset} />
+            <WeekNavigator weekOffset={weekOffset} minWeekOffset={minWeekOffset} onChange={setWeekOffset} />
           </div>
           <p className="text-[11px] text-slate-500 font-medium mt-0.5">
             Positive vs Support · Weekdays only

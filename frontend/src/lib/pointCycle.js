@@ -99,6 +99,37 @@ export const weekdayBounds = (weekOffset = 0, now = new Date()) => {
   };
 };
 
+export const earliestLogIso = (logs) => {
+  let earliest = "";
+  (logs || []).forEach((log) => {
+    const day = logCalendarDate(log);
+    if (!day) return;
+    if (!earliest || day < earliest) earliest = day;
+  });
+  return earliest || null;
+};
+
+export const minWeekOffsetForDate = (isoDate, now = new Date()) => {
+  if (!isoDate) return 0;
+  const parsed = new Date(`${String(isoDate).slice(0, 10)}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return 0;
+  const loggedMonday = startOfWeek(parsed, { weekStartsOn: 1 });
+  const currentMonday = startOfWeek(startOfDay(now), { weekStartsOn: 1 });
+  const weeks = Math.trunc(differenceInCalendarDays(loggedMonday, currentMonday) / 7);
+  return Math.min(0, weeks);
+};
+
+export const schoolWeekOptions = (minWeekOffset = 0, now = new Date()) => {
+  const floor = Math.min(0, minWeekOffset);
+  const options = [];
+  for (let offset = 0; offset >= floor; offset -= 1) {
+    const { start, end } = weekdayBounds(offset, now);
+    const range = `${format(start, "MMM d")} – ${format(end, "MMM d")}`;
+    options.push({ offset, label: offset === 0 ? `${range} (This Week)` : range });
+  }
+  return options;
+};
+
 export const loggedWeekSeries = (students, logs, weekOffset = 0) => {
   const { start } = weekdayBounds(weekOffset);
   return [0, 1, 2, 3, 4].map((offset) => {
