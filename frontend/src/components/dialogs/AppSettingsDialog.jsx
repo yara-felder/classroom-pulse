@@ -50,7 +50,7 @@ const ModePicker = ({ value, onChange }) => (
   </div>
 );
 
-export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", focusSection = "" }) => {
+export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", focusSection = "", initialStudentId = "" }) => {
   const { digestSettings, updateDigestSettings, pointSettings, updatePointSettings, privacySettings, updatePrivacySettings, role, students } = useClassroom();
   const [draft, setDraft] = useState(digestSettings);
   const [pointDraft, setPointDraft] = useState(pointSettings);
@@ -107,7 +107,9 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
           </DialogTitle>
           <DialogDescription>
             {isAdmin
-              ? "Invite teachers and case managers into your school."
+              ? focusSection === "caseload"
+                ? "Assign this student to a case manager."
+                : "Invite teachers and case managers into your school."
               : "Configure how Classroom Pulse works for your classes."}
           </DialogDescription>
         </DialogHeader>
@@ -138,7 +140,12 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
             </TabsContent>
           )}
           <TabsContent value="school" className="mt-4">
-            <SchoolAccessPanel role={role} students={students} focusSection={open ? focusSection : ""} />
+            <SchoolAccessPanel
+              role={role}
+              students={students}
+              focusSection={open ? focusSection : ""}
+              initialStudentId={open ? initialStudentId : ""}
+            />
           </TabsContent>
           {!isAdmin && (
           <TabsContent value="points" className="mt-4">

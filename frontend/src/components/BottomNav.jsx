@@ -13,7 +13,7 @@ const items = [
 
 export const BottomNav = () => {
   const { role } = useClassroom();
-  const visible = role === "admin" ? items.filter((item) => item.to !== "/roster" && item.to !== "/digest") : items;
+  const visible = role === "admin" ? items.filter((item) => item.to !== "/digest") : items;
   return (
     <nav
       data-testid="bottom-nav"

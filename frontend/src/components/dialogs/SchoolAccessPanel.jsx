@@ -10,7 +10,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const roleName = (role) => (role === "case_manager" ? "Case manager" : role === "admin" ? "Administrator" : "Teacher");
 
-export const SchoolAccessPanel = ({ role, students, focusSection = "" }) => {
+export const SchoolAccessPanel = ({ role, students, focusSection = "", initialStudentId = "" }) => {
   const { user } = useAuth();
   const [inviteRole, setInviteRole] = useState("teacher");
   const [invite, setInvite] = useState(null);
@@ -55,6 +55,10 @@ export const SchoolAccessPanel = ({ role, students, focusSection = "" }) => {
     document.getElementById(id)?.scrollIntoView({ block: "nearest" });
     return undefined;
   }, [focusSection]);
+
+  useEffect(() => {
+    if (initialStudentId) setStudentId(initialStudentId);
+  }, [initialStudentId]);
 
   useEffect(() => {
     if (user?.isDemo) {
