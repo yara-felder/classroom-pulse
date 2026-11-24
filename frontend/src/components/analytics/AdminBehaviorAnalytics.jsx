@@ -20,11 +20,18 @@ import {
   chartSeries,
   currentWeekdays,
   demoClassrooms,
+  demoTodayClassrooms,
   loadSchoolAnalytics,
   loadSchoolEarliestLogDate,
+  loadSchoolTodayPulse,
   ratioOf,
   sumDays,
+  todayChartSeries,
+  todayDateLabel,
+  todayHeading,
+  todayTotals,
 } from "@/lib/schoolAnalytics";
+import { localCalendarDate } from "@/lib/db";
 
 const CHART_MARGIN = { top: 6, right: 8, left: 0, bottom: 24 };
 const TOOLTIP_STYLE = { background: "white", border: "1px solid #E2E8F0", borderRadius: 12, fontSize: 12 };
@@ -72,14 +79,17 @@ const WeekBar = ({ days, testid = "classroom-week-bar" }) => {
 export const AdminBehaviorAnalytics = () => {
   const { user } = useAuth();
   const { students, logs } = useClassroom();
+  const [range, setRange] = useState("week");
   const [weekOffset, setWeekOffset] = useState(0);
   const [schoolEarliestIso, setSchoolEarliestIso] = useState(null);
   const week = useMemo(() => weekdayBounds(weekOffset), [weekOffset]);
   const earliestIso = user?.isDemo ? earliestLogIso(logs) : schoolEarliestIso;
   const minWeekOffset = useMemo(() => minWeekOffsetForDate(earliestIso), [earliestIso]);
   const [classrooms, setClassrooms] = useState([]);
+  const [todayClassrooms, setTodayClassrooms] = useState([]);
   const [selectedId, setSelectedId] = useState("all");
   const [status, setStatus] = useState(user?.isDemo ? "ready" : "loading");
+  const today = range === "today";
 
   useEffect(() => {
     if (!user?.id || user.isDemo) return undefined;
@@ -93,7 +103,7 @@ export const AdminBehaviorAnalytics = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user?.id) return undefined;
+    if (!user?.id || range !== "week") return undefined;
     if (user.isDemo) {
       setClassrooms(demoClassrooms(user, students, logs, weekOffset));
       setStatus("ready");
@@ -115,17 +125,44 @@ export const AdminBehaviorAnalytics = () => {
     return () => {
       cancelled = true;
     };
-  }, [user, week.startIso, week.endIso, weekOffset, students, logs]);
+  }, [user, range, week.startIso, week.endIso, weekOffset, students, logs]);
 
   useEffect(() => {
-    if (selectedId !== "all" && !classrooms.some((classroom) => classroom.teacherId === selectedId)) {
+    if (!user?.id || range !== "today") return undefined;
+    if (user.isDemo) {
+      setTodayClassrooms(demoTodayClassrooms(user, students, logs));
+      setStatus("ready");
+      return undefined;
+    }
+    let cancelled = false;
+    setStatus("loading");
+    loadSchoolTodayPulse(user.id, localCalendarDate())
+      .then((rows) => {
+        if (cancelled) return;
+        setTodayClassrooms(rows);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTodayClassrooms([]);
+        setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, range, students, logs]);
+
+  const listed = today ? todayClassrooms : classrooms;
+
+  useEffect(() => {
+    if (selectedId !== "all" && !listed.some((classroom) => classroom.teacherId === selectedId)) {
       setSelectedId("all");
     }
-  }, [classrooms, selectedId]);
+  }, [listed, selectedId]);
 
-  const visible = selectedId === "all" ? classrooms : classrooms.filter((classroom) => classroom.teacherId === selectedId);
-  const totals = sumDays(visible.flatMap((classroom) => classroom.days));
-  const trend = chartSeries(visible);
+  const visible = selectedId === "all" ? listed : listed.filter((classroom) => classroom.teacherId === selectedId);
+  const totals = today ? todayTotals(visible) : sumDays(visible.flatMap((classroom) => classroom.days || []));
+  const trend = today ? todayChartSeries(visible) : chartSeries(visible);
   const emptyWeek = [0, 1, 2, 3, 4].map((offset) => {
     const date = addDays(week.start, offset);
     return { date: format(date, "MM/dd"), positive: 0, support: 0 };
@@ -138,25 +175,61 @@ export const AdminBehaviorAnalytics = () => {
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900" style={OUTFIT}>
           Behavior Analytics
         </h1>
-        <p className="text-sm text-slate-500 mt-1">School-wide weekday trends across linked classrooms.</p>
+        <p className="text-sm text-slate-500 mt-1">
+          {today ? "Today's school pulse across linked classrooms." : "School-wide weekday trends across linked classrooms."}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Today or week" data-testid="analytics-range-toggle">
+            <button
+              type="button"
+              onClick={() => setRange("today")}
+              aria-pressed={today}
+              data-testid="analytics-range-today"
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${today ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => setRange("week")}
+              aria-pressed={!today}
+              data-testid="analytics-range-week"
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${!today ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              Week
+            </button>
+          </div>
+          {today ? (
+            <p className="text-sm font-semibold text-slate-700" data-testid="analytics-today-label">
+              {todayHeading()}
+            </p>
+          ) : (
+            <WeekNavigator weekOffset={weekOffset} minWeekOffset={minWeekOffset} onChange={setWeekOffset} />
+          )}
+        </div>
         <div className="mt-3">
           <CycleHeader />
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
-        <Kpi testid="admin-kpi-positive" icon={Sparkles} label="Positive Logs" value={totals.positive} tone="text-emerald-700" />
-        <Kpi testid="admin-kpi-support" icon={AlertTriangle} label="Support Logs" value={totals.support} tone="text-amber-700" />
+        {today ? (
+          <Kpi testid="admin-kpi-total" icon={School} label="Total Logs" value={totals.positive + totals.support} tone="text-indigo-700" />
+        ) : null}
+        <Kpi testid="admin-kpi-positive" icon={Sparkles} label={today ? "Positive" : "Positive Logs"} value={totals.positive} tone="text-emerald-700" />
+        <Kpi testid="admin-kpi-support" icon={AlertTriangle} label={today ? "Needs Support" : "Support Logs"} value={totals.support} tone="text-amber-700" />
         <Kpi testid="admin-kpi-ratio" icon={TrendingUp} label="Positive Ratio" value={`${ratioOf(totals.positive, totals.support)}%`} tone="text-teal-700" />
-        <Kpi testid="admin-kpi-classrooms" icon={School} label="Active Classrooms" value={visible.length} tone="text-indigo-700" />
+        {today ? null : (
+          <Kpi testid="admin-kpi-classrooms" icon={School} label="Active Classrooms" value={visible.length} tone="text-indigo-700" />
+        )}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-5" data-testid="chart-weekly-trend">
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-5" data-testid={today ? "chart-today-pulse" : "chart-weekly-trend"}>
         <div className="flex gap-1.5 overflow-x-auto pb-1" data-testid="classroom-filter">
           <FilterPill active={selectedId === "all"} onClick={() => setSelectedId("all")} testid="classroom-filter-all">
             All Classrooms
           </FilterPill>
-          {classrooms.map((classroom) => (
+          {listed.map((classroom) => (
             <FilterPill
               key={classroom.teacherId}
               active={selectedId === classroom.teacherId}
@@ -168,12 +241,13 @@ export const AdminBehaviorAnalytics = () => {
           ))}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
-          <h3 className="text-base font-bold text-slate-900" style={OUTFIT} data-testid="weekly-trend-range">
-            Weekly trend
+          <h3 className="text-base font-bold text-slate-900" style={OUTFIT} data-testid={today ? "today-pulse-title" : "weekly-trend-range"}>
+            {today ? "Today by routine" : "Weekly trend"}
           </h3>
-          <WeekNavigator weekOffset={weekOffset} minWeekOffset={minWeekOffset} onChange={setWeekOffset} />
         </div>
-        <p className="text-[11px] text-slate-500 font-medium mt-0.5">Positive vs Support · Weekdays only</p>
+        <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+          {today ? "Positive vs Needs Support · Morning, lunch, and afternoon" : "Positive vs Support · Weekdays only"}
+        </p>
         <div className="h-72 mt-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chart} barGap={4} margin={CHART_MARGIN}>
@@ -183,7 +257,7 @@ export const AdminBehaviorAnalytics = () => {
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend verticalAlign="bottom" wrapperStyle={LEGEND_STYLE} />
               <Bar dataKey="positive" name="Positive" fill="#10B981" radius={BAR_RADIUS} />
-              <Bar dataKey="support" name="Support" fill="#F59E0B" radius={BAR_RADIUS} />
+              <Bar dataKey="support" name={today ? "Needs Support" : "Support"} fill="#F59E0B" radius={BAR_RADIUS} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -191,10 +265,12 @@ export const AdminBehaviorAnalytics = () => {
 
       <div className="bg-white border border-slate-200 rounded-2xl p-5 mt-5" data-testid="classroom-trends">
         <h3 className="text-base font-bold text-slate-900" style={OUTFIT}>
-          Weekly Trends by Classroom
+          {today ? "Today by Classroom" : "Weekly Trends by Classroom"}
         </h3>
         <p className="text-[11px] text-slate-500 font-medium mt-0.5" data-testid="classroom-trends-subtitle">
-          Counts only · {schoolWeekRangeLabel(week.start, week.end)}. Student names stay with each teacher.
+          {today
+            ? `Counts only · ${todayDateLabel()}. Student names stay with each teacher.`
+            : `Counts only · ${schoolWeekRangeLabel(week.start, week.end)}. Student names stay with each teacher.`}
         </p>
         {status === "loading" && <p className="text-sm text-slate-500 mt-4">Loading classrooms…</p>}
         {status === "error" && (
@@ -202,12 +278,14 @@ export const AdminBehaviorAnalytics = () => {
             School totals appear after the school database update is applied.
           </p>
         )}
-        {status === "ready" && classrooms.length === 0 && (
+        {status === "ready" && listed.length === 0 && (
           <p className="text-sm text-slate-500 mt-4">No classrooms are linked to this school yet.</p>
         )}
         <ul className="mt-4 space-y-2">
-          {classrooms.map((classroom) => {
-            const cycle = sumDays(classroom.days);
+          {listed.map((classroom) => {
+            const cycle = today
+              ? { positive: classroom.positive || 0, support: classroom.support || 0 }
+              : sumDays(classroom.days || []);
             const ratio = ratioOf(cycle.positive, cycle.support);
             const active = selectedId === classroom.teacherId;
             return (
@@ -225,14 +303,21 @@ export const AdminBehaviorAnalytics = () => {
                       <p className="text-xs text-slate-600 mt-1">
                         {cycle.positive} positive · {cycle.support} support
                       </p>
+                      {today && classroom.tags?.length > 0 && (
+                        <p className="text-[11px] text-slate-500 mt-1" data-testid={`classroom-tags-${classroom.teacherId}`}>
+                          Top today: {classroom.tags.join(" · ")}
+                        </p>
+                      )}
                     </div>
                     <span className="shrink-0 text-[11px] font-bold rounded-full bg-teal-50 text-teal-800 border border-teal-200 px-2 py-1" data-testid={`classroom-ratio-${classroom.teacherId}`}>
                       {ratio}%
                     </span>
                   </div>
-                  <div className="mt-3">
-                    <WeekBar days={currentWeekdays(classroom.days)} testid={`classroom-week-bar-${classroom.teacherId}`} />
-                  </div>
+                  {!today && (
+                    <div className="mt-3">
+                      <WeekBar days={currentWeekdays(classroom.days)} testid={`classroom-week-bar-${classroom.teacherId}`} />
+                    </div>
+                  )}
                 </button>
               </li>
             );

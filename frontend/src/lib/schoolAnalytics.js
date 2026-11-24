@@ -1,6 +1,6 @@
 import { addDays, format, startOfWeek } from "date-fns";
 import { supabase } from "@/lib/supabase";
-import { countLogsOnDay, weekdayBounds } from "@/lib/pointCycle";
+import { countLogsOnDay, logCalendarDate, weekdayBounds } from "@/lib/pointCycle";
 
 const iso = (date) => format(date, "yyyy-MM-dd");
 
@@ -104,6 +104,124 @@ export const loadSchoolEarliestLogDate = async (userId) => {
   });
   if (earliest.error || !earliest.data) return null;
   return String(earliest.data).slice(0, 10);
+};
+
+export const TODAY_BLOCKS = ["Morning", "Lunch/Recess", "Afternoon"];
+
+export const todayHeading = (now = new Date()) => `Today · ${format(now, "EEE, MMM d, yyyy")}`;
+
+export const todayDateLabel = (now = new Date()) => format(now, "EEE, MMM d, yyyy");
+
+export const timeBlockLabel = (timestamp) => {
+  const parsed = timestamp ? new Date(timestamp) : null;
+  const hour = parsed && !Number.isNaN(parsed.getTime()) ? parsed.getHours() : 9;
+  if (hour < 11) return "Morning";
+  if (hour < 13) return "Lunch/Recess";
+  return "Afternoon";
+};
+
+const emptyBlocks = () => TODAY_BLOCKS.map((label) => ({ label, positive: 0, support: 0 }));
+
+export const summarizeToday = (logs) => {
+  const blocks = emptyBlocks();
+  const tags = new Map();
+  let positive = 0;
+  let support = 0;
+  (logs || []).forEach((log) => {
+    if (log.type !== "positive" && log.type !== "support") return;
+    if (log.type === "positive") positive += 1;
+    else support += 1;
+    const block = blocks.find((item) => item.label === timeBlockLabel(log.timestamp));
+    if (block) block[log.type === "positive" ? "positive" : "support"] += 1;
+    const tag = (log.tag || "").trim();
+    if (tag) tags.set(tag, (tags.get(tag) || 0) + 1);
+  });
+  return {
+    positive,
+    support,
+    blocks,
+    tags: [...tags.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 3)
+      .map(([tag]) => tag),
+  };
+};
+
+export const demoTodayClassrooms = (user, students, logs, now = new Date()) => {
+  const day = now.toLocaleDateString("en-CA");
+  const ids = new Set((students || []).map((student) => student.id));
+  const dayLogs = (logs || []).filter((log) => ids.has(log.studentId) && logCalendarDate(log) === day);
+  return [
+    {
+      teacherId: user?.id || "demo-teacher",
+      name: user?.name || "Teacher",
+      title: user?.role || "Teacher",
+      ...summarizeToday(dayLogs),
+    },
+  ];
+};
+
+export const normalizeTodayClassrooms = (payload) => {
+  const rows = payload?.classrooms || [];
+  return rows
+    .map((row) => ({
+      teacherId: row.teacher_id,
+      name: row.teacher_name || "Teacher",
+      title: row.teacher_title || "",
+      positive: Number(row.positive) || 0,
+      support: Number(row.support) || 0,
+      blocks: TODAY_BLOCKS.map((label) => {
+        const found = (row.blocks || []).find((block) => block.label === label);
+        return {
+          label,
+          positive: Number(found?.positive) || 0,
+          support: Number(found?.support) || 0,
+        };
+      }),
+      tags: Array.isArray(row.tags) ? row.tags.filter(Boolean).slice(0, 3) : [],
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+export const todayChartSeries = (classrooms) =>
+  TODAY_BLOCKS.map((label) =>
+    (classrooms || []).reduce(
+      (acc, classroom) => {
+        const block = (classroom.blocks || []).find((item) => item.label === label);
+        return {
+          date: label,
+          positive: acc.positive + (block?.positive || 0),
+          support: acc.support + (block?.support || 0),
+        };
+      },
+      { date: label, positive: 0, support: 0 }
+    )
+  );
+
+export const todayTotals = (classrooms) =>
+  (classrooms || []).reduce(
+    (acc, classroom) => ({
+      positive: acc.positive + (classroom.positive || 0),
+      support: acc.support + (classroom.support || 0),
+    }),
+    { positive: 0, support: 0 }
+  );
+
+export const loadSchoolTodayPulse = async (userId, day) => {
+  const membership = await supabase
+    .from("school_memberships")
+    .select("school_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (membership.error) throw new Error(membership.error.message);
+  if (!membership.data?.school_id) throw new Error("This account is not linked to a school yet.");
+
+  const pulse = await supabase.rpc("get_school_today_pulse", {
+    p_school_id: membership.data.school_id,
+    p_day: day,
+  });
+  if (pulse.error) throw new Error(pulse.error.message);
+  return normalizeTodayClassrooms(pulse.data);
 };
 
 export const loadSchoolAnalytics = async (userId, cycleStart, cycleEnd) => {
