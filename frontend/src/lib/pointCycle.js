@@ -119,12 +119,18 @@ export const minWeekOffsetForDate = (isoDate, now = new Date()) => {
   return Math.min(0, weeks);
 };
 
+export const schoolWeekRangeLabel = (start, end) => {
+  const sameYear = format(start, "yyyy") === format(end, "yyyy");
+  if (sameYear) return `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`;
+  return `${format(start, "MMM d, yyyy")} – ${format(end, "MMM d, yyyy")}`;
+};
+
 export const schoolWeekOptions = (minWeekOffset = 0, now = new Date()) => {
   const floor = Math.min(0, minWeekOffset);
   const options = [];
   for (let offset = 0; offset >= floor; offset -= 1) {
     const { start, end } = weekdayBounds(offset, now);
-    const range = `${format(start, "MMM d")} – ${format(end, "MMM d")}`;
+    const range = schoolWeekRangeLabel(start, end);
     options.push({ offset, label: offset === 0 ? `${range} (This Week)` : range });
   }
   return options;

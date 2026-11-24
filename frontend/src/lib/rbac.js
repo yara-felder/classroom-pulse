@@ -16,14 +16,13 @@ export const roleLabel = (role) => (ACCESS_ROLES.find((r) => r.id === role) || A
 
 export const DEFAULT_PRIVACY_SETTINGS = { adminVisibility: "aggregate" };
 
-// Students a role may see by name: case managers see IEP/504 caseload; admins only with Full Roster Access.
-export const scopeStudents = (role, students, privacy) => {
+// Case managers see IEP/504 students. School administrators see the school roster by name.
+export const scopeStudents = (role, students) => {
   if (role === "case_manager") return students.filter((s) => s.iep || s.plan504);
-  if (role === "admin" && privacy.adminVisibility !== "full") return [];
   return students;
 };
 
-export const namesHidden = (role, privacy) => role === "admin" && privacy.adminVisibility !== "full";
+export const namesHidden = () => false;
 
 // Private reflection notes are visible only to the teacher.
 export const visibleNote = (log, role) => (log.notePrivate && !can(role, "view_private_notes") ? "" : log.note || "");

@@ -15,7 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useClassroom } from "@/context/ClassroomContext";
 import { CycleHeader } from "@/components/analytics/CycleHeader";
 import { WeekNavigator } from "@/components/analytics/WeekNavigator";
-import { earliestLogIso, minWeekOffsetForDate, weekdayBounds } from "@/lib/pointCycle";
+import { earliestLogIso, minWeekOffsetForDate, schoolWeekRangeLabel, weekdayBounds } from "@/lib/pointCycle";
 import {
   chartSeries,
   currentWeekdays,
@@ -194,7 +194,7 @@ export const AdminBehaviorAnalytics = () => {
           Weekly Trends by Classroom
         </h3>
         <p className="text-[11px] text-slate-500 font-medium mt-0.5" data-testid="classroom-trends-subtitle">
-          Counts only · {format(week.start, "MMM d")} – {format(week.end, "MMM d")}. Student names stay with each teacher.
+          Counts only · {schoolWeekRangeLabel(week.start, week.end)}. Student names stay with each teacher.
         </p>
         {status === "loading" && <p className="text-sm text-slate-500 mt-4">Loading classrooms…</p>}
         {status === "error" && (

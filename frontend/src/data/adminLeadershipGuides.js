@@ -61,10 +61,10 @@ export const LEADERSHIP_GUIDES = [
       "Case managers should see the students they are assigned, and administrators should see school patterns without opening private notes.",
     checklist: [
       "Assign each IEP or 504 student a case manager in School access. One named person is cleaner than a shared inbox.",
-      "Keep the default privacy setting on aggregate. Student names stay with the teacher and the assigned case manager.",
-      "Do not give an administrator a reason to open behavior notes for curiosity. Full visibility is for a defined need, then it goes back.",
+      "School administrators automatically see the school roster, including student names, so they can assign case managers.",
+      "Private staff notes and private log entries stay with the teacher. The roster does not include those notes.",
       "Case managers may review non-private logs for their assigned students. Staff-only notes and private entries stay with the classroom team.",
-      "For an IEP meeting, ask for a short trend: positive logs and support logs across the last few school weeks, plus what the team already tried.",
+      "For an IEP or 504 meeting, review a 4-week picture: positive and support counts, top behaviors noted, the times or settings where patterns showed up (including what happened right before), the supports already tried and how the student responded, and goal progress.",
       "Write the summary in observable language. “Support logs rose the week of Nov 9, mostly during unstructured time” is useful. Motive and diagnosis are not.",
       "Bring the case manager and the teacher to the meeting. An admin chart is context. It is not the student’s plan.",
     ],
@@ -72,7 +72,7 @@ export const LEADERSHIP_GUIDES = [
       {
         id: "iep-summary",
         title: "Requesting an objective meeting summary",
-        text: "For the meeting, please bring positive and support counts for the last four school weeks, the settings where support clustered, and the two supports you already tried. No student comparison and no private notes.",
+        text: "For the meeting, please bring a 4-week summary of positive and support counts, top behaviors noted, the times or settings where patterns showed up (including what happened right before), the supports we've already tried and how the student responded, plus any goal progress.",
       },
     ],
   },

@@ -20,7 +20,7 @@ export const WeekNavigator = ({ weekOffset, minWeekOffset = 0, onChange }) => {
         aria-label={selected ? `School week, ${selected.label}` : "School week"}
         value={String(weekOffset)}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-8 max-w-[16rem] rounded-lg border border-slate-200 bg-white pl-2.5 pr-2 text-xs font-semibold text-slate-700"
+        className="h-8 max-w-full rounded-lg border border-slate-200 bg-white pl-2.5 pr-2 text-xs font-semibold text-slate-700"
         data-testid="week-select"
       >
         {options.map((option) => (

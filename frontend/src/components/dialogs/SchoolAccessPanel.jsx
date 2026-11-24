@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/context/AuthContext";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const roleName = (role) => (role === "case_manager" ? "Case manager" : role === "admin" ? "Administrator" : "Teacher");
 
 export const SchoolAccessPanel = ({ role, students, focusSection = "" }) => {
+  const { user } = useAuth();
   const [inviteRole, setInviteRole] = useState("teacher");
   const [invite, setInvite] = useState(null);
   const [invites, setInvites] = useState([]);
@@ -55,10 +57,14 @@ export const SchoolAccessPanel = ({ role, students, focusSection = "" }) => {
   }, [focusSection]);
 
   useEffect(() => {
+    if (user?.isDemo) {
+      setRoster((students || []).filter((student) => student.iep || student.plan504));
+      return;
+    }
     if (!isSupabaseConfigured) return;
     loadStaffTools().catch((err) => toast.error(err.message || "Couldn't load school access"));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load when the signed-in role is known
-  }, [role]);
+  }, [role, user?.isDemo, students]);
 
   const createInvite = async () => {
     setBusy(true);
@@ -192,6 +198,9 @@ export const SchoolAccessPanel = ({ role, students, focusSection = "" }) => {
       {(role === "admin" || role === "teacher") && (
         <div id="school-caseload-section" data-testid="school-caseload-section" className={`space-y-2 ${focusSection === "caseload" ? "rounded-xl ring-2 ring-teal-400 p-2" : ""}`}>
           <Label className="text-xs font-semibold">Assign an IEP or 504 student to a case manager</Label>
+          {role === "admin" && (
+            <p className="text-[11px] text-slate-500">Every IEP and 504 student on this school roster is listed here.</p>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Select value={studentId} onValueChange={setStudentId}>
               <SelectTrigger data-testid="caseload-student">
@@ -218,7 +227,7 @@ export const SchoolAccessPanel = ({ role, students, focusSection = "" }) => {
             Assign caseload
           </Button>
           {role === "admin" && roster.length === 0 && (
-            <p className="text-[11px] text-slate-500">Names appear here when that teacher allows full roster access. Counts-only privacy stays hidden.</p>
+            <p className="text-[11px] text-slate-500" data-testid="caseload-roster-empty">No IEP or 504 students are on the school roster yet.</p>
           )}
           {assignments.length > 0 && (
             <ul className="text-xs text-slate-600 space-y-1" data-testid="caseload-list">

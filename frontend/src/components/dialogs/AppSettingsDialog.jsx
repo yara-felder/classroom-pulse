@@ -64,8 +64,6 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps -- reset the draft only when the dialog opens
 
-  const setPrivacy = (k) => (v) => setPrivacyDraft((d) => ({ ...d, [k]: v }));
-
   const set = (k) => (v) => setDraft((d) => ({ ...d, [k]: v }));
   const setPoint = (k) => (v) => setPointDraft((d) => ({ ...d, [k]: v }));
 
@@ -136,7 +134,7 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
           </TabsList>
           {!isAdmin && (
             <TabsContent value="privacy" className="mt-4">
-              <PrivacySettings draft={privacyDraft} set={setPrivacy} />
+              <PrivacySettings />
             </TabsContent>
           )}
           <TabsContent value="school" className="mt-4">

@@ -237,6 +237,14 @@ export const TopBar = () => {
             </DropdownMenuItem>
               </>
             )}
+            {role === "case_manager" && (
+              <DropdownMenuItem
+                data-testid="menu-manage-periods"
+                onSelect={() => setPeriodsOpen(true)}
+              >
+                <Layers className="w-4 h-4 mr-2" /> Manage Periods
+              </DropdownMenuItem>
+            )}
             {(role === "admin" || role === "case_manager") && (
               <DropdownMenuItem
                 data-testid="menu-school-access"

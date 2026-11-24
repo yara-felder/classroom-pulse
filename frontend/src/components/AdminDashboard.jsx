@@ -3,7 +3,6 @@ import { Building2, ClipboardList, FileText, UserPlus, Users } from "lucide-reac
 import { useAuth } from "@/context/AuthContext";
 import { useClassroom } from "@/context/ClassroomContext";
 import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
-import { namesHidden } from "@/lib/rbac";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const OUTFIT = { fontFamily: "Outfit" };
@@ -28,12 +27,11 @@ const firstRow = (data) => (Array.isArray(data) ? data[0] : data);
 
 export const AdminDashboard = () => {
   const { user } = useAuth();
-  const { students, privacySettings, role } = useClassroom();
+  const { students } = useClassroom();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [focusSection, setFocusSection] = useState("invites");
   const [live, setLive] = useState(null);
 
-  const countsOnly = namesHidden(role, privacySettings);
   const localIep = students.filter((student) => student.iep || student.plan504).length;
 
   useEffect(() => {
@@ -77,7 +75,7 @@ export const AdminDashboard = () => {
           School overview
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          {user?.schoolName || "Your school"} · {countsOnly ? "Counts only. Student names stay with their teachers." : "Teachers have allowed named roster access for caseload work."}
+          {user?.schoolName || "Your school"} · The school roster, including student names, is available for caseload assignment.
         </p>
       </div>
 
@@ -94,7 +92,7 @@ export const AdminDashboard = () => {
           icon={Building2}
           label="Active students"
           value={metrics.students}
-          hint={countsOnly ? "School-wide count. Names are hidden." : "School-wide count. Names follow each teacher's privacy setting."}
+          hint="School-wide count. Names are on the school roster."
         />
         <Metric
           testid="admin-metric-iep"
