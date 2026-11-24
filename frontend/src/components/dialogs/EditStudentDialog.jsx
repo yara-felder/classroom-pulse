@@ -45,6 +45,10 @@ const CATEGORY_HEADER_STYLES = {
     active: "bg-emerald-500 text-white border-emerald-500",
     idle: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
   },
+  slate: {
+    active: "bg-slate-600 text-white border-slate-600",
+    idle: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100",
+  },
 };
 
 const splitName = (full) => {

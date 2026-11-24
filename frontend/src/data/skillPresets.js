@@ -75,6 +75,18 @@ export const SKILL_CATEGORIES = [
       "Use Timer to Pace Work",
     ],
   },
+  {
+    id: "academic-engagement",
+    label: "Academic Engagement & Work Habits",
+    color: "slate",
+    skills: [
+      "Task Initiation (Starts work promptly without repeated prompts)",
+      "Sustained Focus (Stays on-task during instruction or independent work)",
+      "Work Completion (Completes and submits assigned tasks)",
+      "Organization & Materials (Prepares materials and tracks assignments)",
+      "Academic Persistence (Uses strategies and keeps trying on challenging work)",
+    ],
+  },
 ];
 
 export const ALL_PRESET_SKILLS = SKILL_CATEGORIES.flatMap((c) => c.skills);
