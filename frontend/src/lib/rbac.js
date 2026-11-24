@@ -44,7 +44,11 @@ export const ownPeriodStudents = (students, classSection, viewerId) =>
 export const assignedCaseloadStudents = (students) => students.filter((student) => isAssignedCaseload(student));
 
 export const visibleClassroomStudents = (role, students, classSection, viewerId) => {
-  if (role === "case_manager") return ownPeriodStudents(students, classSection, viewerId);
+  if (role === "case_manager") {
+    return students.filter(
+      (student) => isOwnStudent(student, viewerId) && periodIdsOf(student).includes(classSection)
+    );
+  }
   return students.filter((student) => periodIdsOf(student).includes(classSection));
 };
 

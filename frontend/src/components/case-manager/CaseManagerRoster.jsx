@@ -29,7 +29,7 @@ const matches = (student, query) => {
 
 export const CaseManagerRoster = () => {
   const { user } = useAuth();
-  const { students, classSection, setPullout } = useClassroom();
+  const { students, logs, classSection, setPullout } = useClassroom();
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -45,6 +45,13 @@ export const CaseManagerRoster = () => {
     if (!classSection) return;
     const placed = (student.pulloutPeriodIds || []).includes(classSection);
     setPullout(student.id, classSection, !placed);
+  };
+
+  const latestActivity = (studentId) => {
+    const recent = logs
+      .filter((log) => log.studentId === studentId && !log.notePrivate && (log.type === "positive" || log.type === "support"))
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+    return recent?.tag || "No behavior logged yet";
   };
 
   return (
@@ -80,7 +87,69 @@ export const CaseManagerRoster = () => {
         />
       </div>
 
-      <section className="mb-8" data-testid="my-classroom-roster">
+      <section className="mb-8" data-testid="assigned-caseload-roster">
+        <h2 className="text-xl font-extrabold text-slate-900" style={OUTFIT}>Assigned caseload</h2>
+        <p className="text-sm text-slate-500 mt-1 mb-4">
+          IEP and 504 students assigned by the school administrator. Private notes stay with the classroom teacher.
+        </p>
+        {caseload.length === 0 ? (
+          <p className="text-sm text-slate-500" data-testid="assigned-caseload-empty">No students are assigned to you yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {caseload.map((student) => {
+              const placed = (student.pulloutPeriodIds || []).includes(classSection);
+              return (
+                <div key={student.id} data-testid={`caseload-card-${student.id}`} className="bg-white border border-slate-200 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    <StudentAvatar name={student.name} id={student.id} size="lg" />
+                    <div className="min-w-0">
+                      <h3 className="text-[15px] font-bold text-slate-900 truncate" style={OUTFIT}>{student.name}</h3>
+                      {student.grade ? (
+                        <p className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                          <GraduationCap className="w-3.5 h-3.5" /> {student.grade}
+                        </p>
+                      ) : null}
+                      <p className="text-xs text-slate-600 mt-1" data-testid={`caseload-teacher-${student.id}`}>
+                        {student.teacherName || "Classroom teacher"}
+                      </p>
+                      <Badge className="mt-2 bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px] font-bold" data-testid={`caseload-plan-${student.id}`}>
+                        {planLabel(student.iep, student.plan504)}
+                      </Badge>
+                      <p className="text-xs text-slate-600 mt-2" data-testid={`caseload-activity-${student.id}`}>
+                        {latestActivity(student.id)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] font-semibold text-slate-500 mt-3" data-testid={`digest-managed-note-${student.id}`}>
+                    Managed by classroom teacher
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTrendsStudent(student)}
+                      data-testid={`caseload-trends-${student.id}`}
+                      className="text-xs font-bold text-teal-700 hover:text-teal-800"
+                    >
+                      View trends
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => togglePlacement(student)}
+                      disabled={!classSection}
+                      data-testid={`caseload-place-${student.id}`}
+                      className="text-xs font-bold text-slate-500 hover:text-slate-800 disabled:opacity-40"
+                    >
+                      {placed ? `Remove from ${periodName}` : `Add to ${periodName}`}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section data-testid="my-classroom-roster">
         <h2 className="text-xl font-extrabold text-slate-900" style={OUTFIT}>My classroom and period students</h2>
         <p className="text-sm text-slate-500 mt-1 mb-4">
           Students you created. Edit a card to set periods, behavior goals, and Parent Digest contacts.
@@ -130,65 +199,6 @@ export const CaseManagerRoster = () => {
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section data-testid="assigned-caseload-roster">
-        <h2 className="text-xl font-extrabold text-slate-900" style={OUTFIT}>Assigned IEP / 504 caseload</h2>
-        <p className="text-sm text-slate-500 mt-1 mb-4">
-          Read-only. Private notes stay with the classroom teacher.
-        </p>
-        {caseload.length === 0 ? (
-          <p className="text-sm text-slate-500" data-testid="assigned-caseload-empty">No students are assigned to you yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {caseload.map((student) => {
-              const placed = (student.pulloutPeriodIds || []).includes(classSection);
-              return (
-                <div key={student.id} data-testid={`caseload-card-${student.id}`} className="bg-white border border-slate-200 rounded-2xl p-4">
-                  <div className="flex items-start gap-3">
-                    <StudentAvatar name={student.name} id={student.id} size="lg" />
-                    <div className="min-w-0">
-                      <h3 className="text-[15px] font-bold text-slate-900 truncate" style={OUTFIT}>{student.name}</h3>
-                      {student.grade ? (
-                        <p className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                          <GraduationCap className="w-3.5 h-3.5" /> {student.grade}
-                        </p>
-                      ) : null}
-                      <p className="text-xs text-slate-600 mt-1" data-testid={`caseload-teacher-${student.id}`}>
-                        {student.teacherName || "Classroom teacher"}
-                      </p>
-                      <Badge className="mt-2 bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px] font-bold" data-testid={`caseload-plan-${student.id}`}>
-                        {planLabel(student.iep, student.plan504)}
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-[11px] font-semibold text-slate-500 mt-3" data-testid={`digest-managed-note-${student.id}`}>
-                    Managed by classroom teacher
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setTrendsStudent(student)}
-                      data-testid={`caseload-trends-${student.id}`}
-                      className="text-xs font-bold text-teal-700 hover:text-teal-800"
-                    >
-                      View trends
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => togglePlacement(student)}
-                      disabled={!classSection}
-                      data-testid={`caseload-place-${student.id}`}
-                      className="text-xs font-bold text-slate-500 hover:text-slate-800 disabled:opacity-40"
-                    >
-                      {placed ? `Remove from ${periodName}` : `Include in ${periodName}`}
-                    </button>
-                  </div>
                 </div>
               );
             })}

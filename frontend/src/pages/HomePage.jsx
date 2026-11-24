@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Search, Sparkles, AlertTriangle, Users, TrendingUp } from "lucide-react";
+import { Layers, Plus, Search, Sparkles, AlertTriangle, Users, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StudentCard } from "@/components/StudentCard";
 import { EmptyPeriodState } from "@/components/EmptyPeriodState";
@@ -11,7 +11,7 @@ import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
 import { namesHidden, visibleClassroomStudents } from "@/lib/rbac";
 import { AdminDashboard } from "@/components/AdminDashboard";
-import { CaseManagerHome } from "@/components/case-manager/CaseManagerHome";
+import { ManagePeriodsDialog } from "@/components/dialogs/ManagePeriodsDialog";
 
 const FILTERS = [
   { id: "all", label: "All Students" },
@@ -58,6 +58,7 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [periodsOpen, setPeriodsOpen] = useState(false);
 
   const activePeriodName = useMemo(() => {
     const p = (user?.periods || []).find((pd) => pd.id === classSection);
@@ -88,10 +89,9 @@ export default function HomePage() {
   }, [periodStudents, search, filter]);
 
   if (role === "admin") return <AdminDashboard />;
-  if (role === "case_manager") return <CaseManagerHome />;
 
   return (
-    <div className="pt-6">
+    <div className="pt-6" data-testid={role === "case_manager" ? "case-manager-classroom" : "teacher-classroom"}>
       {/* Class Summary */}
       <div
         data-testid="class-summary-bar"
@@ -109,13 +109,30 @@ export default function HomePage() {
               Tap a card to celebrate, support, or log a moment — in seconds.
             </p>
           </div>
+          {role === "case_manager" && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setPeriodsOpen(true)}
+                data-testid="case-manager-manage-periods"
+                className="inline-flex items-center gap-1.5 text-sm font-bold bg-white border border-slate-200 text-slate-700 rounded-xl px-3 py-2.5 hover:border-teal-300"
+              >
+                <Layers className="w-4 h-4" /> Manage periods
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                data-testid="add-student-btn"
+                className="inline-flex items-center gap-1.5 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-3 py-2.5"
+              >
+                <Plus className="w-4 h-4" /> Add student
+              </button>
+            </div>
+          )}
         </div>
 
         {namesHidden(role, privacySettings) && (
           <RestrictedNotice role={role} title="Aggregate-only access" body="Your district limits administrators to class-level analytics. Open the Analytics tab for building-level trends." />
-        )}
-        {role === "case_manager" && (
-          <RestrictedNotice role={role} title="Your caseload" body="Your classroom is listed with the IEP and 504 students an administrator assigned to you." testid="caseload-notice" />
         )}
         {can("log") && <GettingStartedCard periodStudents={periodStudents} />}
 
@@ -212,6 +229,7 @@ export default function HomePage() {
         )}
       </div>
       <AddStudentDialog open={addOpen} onOpenChange={setAddOpen} />
+      {role === "case_manager" && <ManagePeriodsDialog open={periodsOpen} onOpenChange={setPeriodsOpen} />}
     </div>
   );
 }
