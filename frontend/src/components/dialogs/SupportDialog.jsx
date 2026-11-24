@@ -17,6 +17,7 @@ import { SUPPORT_TAGS } from "@/data/mockData";
 import {
   SUPPORT_CONTEXT_GROUPS,
   cleanSupportContext,
+  contextStateFromLog,
   dateFromTimeInput,
   emptySupportContext,
   timeInputValue,
@@ -25,8 +26,8 @@ import { timeBlockLabel } from "@/lib/schoolAnalytics";
 import { ActionChip } from "@/components/dialogs/ActionChip";
 import { PrivateToggle } from "@/components/dialogs/ReflectionNote";
 
-export const SupportDialog = ({ open, onOpenChange, student }) => {
-  const { addSupport } = useClassroom();
+export const SupportDialog = ({ open, onOpenChange, student, log = null }) => {
+  const { addSupport, updateLog } = useClassroom();
   const [selectedIds, setSelectedIds] = useState([]);
   const [note, setNote] = useState("");
   const [notePrivate, setNotePrivate] = useState(false);
@@ -39,17 +40,21 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
   const hasPlan = !!(student?.iep || student?.plan504);
 
   useEffect(() => {
-    if (open) {
-      setSelectedIds([]);
-      setNote("");
-      setNotePrivate(false);
-      setNotifyParent(false);
-      setLogTime(timeInputValue());
-      setContextOpen(hasPlan);
-      setContext(emptySupportContext());
-      setOtherOpen({});
-    }
-  }, [open, hasPlan]);
+    if (!open) return;
+    const saved = log ? contextStateFromLog(log) : { context: emptySupportContext(), otherOpen: {} };
+    const when = log?.timestamp ? new Date(log.timestamp) : new Date();
+    const matched = log
+      ? SUPPORT_TAGS.filter((tag) => tag.label === log.tag || tag.title === log.tag).map((tag) => tag.id)
+      : [];
+    setSelectedIds(matched);
+    setNote(log?.note || "");
+    setNotePrivate(!!log?.notePrivate);
+    setNotifyParent(!!(log?.notifyParent || log?.includeInDigest));
+    setLogTime(timeInputValue(Number.isNaN(when.getTime()) ? new Date() : when));
+    setContext(saved.context);
+    setOtherOpen(saved.otherOpen);
+    setContextOpen(hasPlan || Object.values(saved.context).some(Boolean));
+  }, [open, hasPlan, log]);
 
   const toggle = (id) =>
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -63,14 +68,27 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
     }
     const when = dateFromTimeInput(logTime);
     const savedContext = cleanSupportContext(context);
-    selectedTags.forEach((tag) =>
-      addSupport(student.id, tag.label, note, {
-        notifyParent,
-        notePrivate,
-        timestamp: when.toISOString(),
+    const payload = {
+      notifyParent,
+      notePrivate,
+      timestamp: when.toISOString(),
+      context: savedContext,
+    };
+    if (log?.id) {
+      updateLog(log.id, {
+        tag: selectedTags[0].label,
+        note,
+        notePrivate: !!(note && notePrivate),
+        notifyParent: !!notifyParent,
+        includeInDigest: !!notifyParent,
+        timestamp: payload.timestamp,
+        logDate: when.toLocaleDateString("en-CA"),
         context: savedContext,
-      })
-    );
+      });
+      selectedTags.slice(1).forEach((tag) => addSupport(student.id, tag.label, note, payload));
+    } else {
+      selectedTags.forEach((tag) => addSupport(student.id, tag.label, note, payload));
+    }
     toast(`Support noted — ${student.name}`, {
       description: `${selectedIds.length} cue${selectedIds.length === 1 ? "" : "s"}${
         notifyParent ? " · queued for parent digest" : ""
@@ -276,6 +294,8 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
             <span data-testid="submit-support-btn-label">
               {count === 0
                 ? "Select at least one cue"
+                : log?.id
+                ? "Save support"
                 : `Log ${count} Support Cue${count === 1 ? "" : "s"}`}
             </span>
           </Button>

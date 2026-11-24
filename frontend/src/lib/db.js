@@ -373,6 +373,9 @@ export async function patchLog(id, updates) {
   if ("note" in updates) patch.note = updates.note;
   if ("notePrivate" in updates) patch.note_private = updates.notePrivate;
   if ("tag" in updates) patch.tag = updates.tag;
+  if ("context" in updates) patch.context = updates.context && typeof updates.context === "object" ? updates.context : {};
+  if ("timestamp" in updates) patch.timestamp = updates.timestamp;
+  if ("logDate" in updates) patch.log_date = updates.logDate;
   const { error } = await supabase.from("behavior_logs").update(patch).eq("id", id);
   throwIf(error);
 }

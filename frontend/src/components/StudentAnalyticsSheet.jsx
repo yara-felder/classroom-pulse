@@ -24,6 +24,7 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { useClassroom } from "@/context/ClassroomContext";
+import { SupportDialog } from "@/components/dialogs/SupportDialog";
 import { useAuth } from "@/context/AuthContext";
 import { visibleNote } from "@/lib/rbac";
 import { contextTags, formatLogTime } from "@/data/supportContext";
@@ -48,10 +49,11 @@ const weekRangeLabel = () => {
 };
 
 export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
-  const { skillsByStudent, logs, role } = useClassroom();
+  const { skillsByStudent, logs, role, can } = useClassroom();
   const { user } = useAuth();
   const chartRef = useRef(null);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState(null);
   if (!student) return null;
 
   const studentLogs = logs.filter((l) => l.studentId === student.id);
@@ -497,6 +499,16 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
                       {note}{log.notePrivate ? " (private)" : ""}
                     </p>
                   )}
+                  {can("log") && !(role === "case_manager" && student.assigned) && (
+                    <button
+                      type="button"
+                      data-testid={`edit-support-${log.id}`}
+                      onClick={() => setEditingLog(log)}
+                      className="mt-1 text-[11px] font-bold text-amber-700 hover:text-amber-800"
+                    >
+                      Edit
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -556,6 +568,15 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
           <FileText className="w-4 h-4" />
           Download PDF History Report
         </button>
+
+        <SupportDialog
+          open={!!editingLog}
+          onOpenChange={(next) => {
+            if (!next) setEditingLog(null);
+          }}
+          student={student}
+          log={editingLog}
+        />
 
         <PdfExportDialog
           open={pdfDialogOpen}

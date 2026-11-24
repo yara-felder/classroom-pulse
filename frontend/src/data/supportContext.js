@@ -42,6 +42,17 @@ export const cleanSupportContext = (context) => {
 export const contextTags = (context) =>
   SUPPORT_CONTEXT_GROUPS.map((group) => context?.[group.id]).filter(Boolean);
 
+export const contextStateFromLog = (log) => {
+  const context = emptySupportContext();
+  const otherOpen = {};
+  SUPPORT_CONTEXT_GROUPS.forEach((group) => {
+    const value = (log?.context?.[group.id] || "").trim();
+    context[group.id] = value;
+    if (group.allowOther && value && !group.options.includes(value)) otherOpen[group.id] = true;
+  });
+  return { context, otherOpen };
+};
+
 export const timeInputValue = (date = new Date()) => {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");

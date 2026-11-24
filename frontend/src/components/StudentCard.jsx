@@ -22,6 +22,7 @@ export const StudentCard = ({ student }) => {
   const { user } = useAuth();
   const [openPositive, setOpenPositive] = useState(false);
   const [openSupport, setOpenSupport] = useState(false);
+  const [editingLog, setEditingLog] = useState(null);
   const [openQuickLog, setOpenQuickLog] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -167,6 +168,19 @@ export const StudentCard = ({ student }) => {
                           <span className="text-slate-500"> — {visibleNote(l, role, user?.id)}{l.notePrivate ? " (private)" : ""}</span>
                         )}
                       </div>
+                      {l.type === "support" && can("log") && !(role === "case_manager" && student.assigned) && (
+                        <button
+                          type="button"
+                          data-testid={`edit-support-${l.id}`}
+                          onClick={() => {
+                            setEditingLog(l);
+                            setOpenSupport(true);
+                          }}
+                          className="shrink-0 text-[11px] font-bold text-amber-700 hover:text-amber-800"
+                        >
+                          Edit
+                        </button>
+                      )}
                     </div>
                   ))
                 )}
@@ -191,7 +205,10 @@ export const StudentCard = ({ student }) => {
             </button>
             <button
               data-testid={`needs-support-btn-${student.id}`}
-              onClick={() => setOpenSupport(true)}
+              onClick={() => {
+                setEditingLog(null);
+                setOpenSupport(true);
+              }}
               className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-1 py-2.5 shadow-sm hover:shadow-amber-200"
               aria-label="Log needs support"
             >
@@ -219,8 +236,12 @@ export const StudentCard = ({ student }) => {
       />
       <SupportDialog
         open={openSupport}
-        onOpenChange={setOpenSupport}
+        onOpenChange={(next) => {
+          setOpenSupport(next);
+          if (!next) setEditingLog(null);
+        }}
         student={student}
+        log={editingLog}
       />
       <QuickLogDialog
         open={openQuickLog}
