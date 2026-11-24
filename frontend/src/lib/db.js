@@ -87,6 +87,8 @@ export const mapLog = (row) => ({
   includeInDigest: row.include_in_digest ?? !!row.notify_parent,
   timestamp: row.timestamp,
   logDate: row.log_date || null,
+  ownerId: row.owner_id || null,
+  context: row.context && typeof row.context === "object" && !Array.isArray(row.context) ? row.context : {},
 });
 
 export const logToRow = (l, ownerId) => ({
@@ -100,7 +102,8 @@ export const logToRow = (l, ownerId) => ({
   notify_parent: !!l.notifyParent,
   include_in_digest: l.includeInDigest ?? !!l.notifyParent,
   timestamp: l.timestamp || new Date().toISOString(),
-  log_date: l.logDate || localCalendarDate(),
+  log_date: l.logDate || localCalendarDate(l.timestamp ? new Date(l.timestamp) : new Date()),
+  context: l.context && typeof l.context === "object" ? l.context : {},
 });
 
 export const mapSkill = (row) => ({
@@ -275,7 +278,15 @@ export async function loadClassroom(ownerId) {
     throwIf(assignedSkillsRes.error);
     throwIf(assignedIepRes.error);
     assignedStudents = assignedStudentsRes.data || [];
-    assignedLogs = (assignedLogsRes.data || []).filter((row) => !row.note_private);
+    const contextRes = await supabase.rpc("caseload_support_context");
+    if (!contextRes.error && Array.isArray(contextRes.data)) {
+      const allowed = new Set(assignedIds);
+      assignedLogs = contextRes.data
+        .filter((row) => allowed.has(row.student_id))
+        .map((row) => ({ ...row, note: "", note_private: false }));
+    } else {
+      assignedLogs = (assignedLogsRes.data || []).filter((row) => !row.note_private);
+    }
     assignedSkills = assignedSkillsRes.data || [];
     assignedIep = assignedIepRes.data || [];
     if (!directoryRes.error) {

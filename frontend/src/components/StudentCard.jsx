@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, AlertTriangle, FileText, Sparkles, CircleDot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useClassroom } from "@/context/ClassroomContext";
+import { useAuth } from "@/context/AuthContext";
 import { PositiveDialog } from "@/components/dialogs/PositiveDialog";
 import { SupportDialog } from "@/components/dialogs/SupportDialog";
 import { QuickLogDialog } from "@/components/dialogs/QuickLogDialog";
@@ -18,6 +19,7 @@ const statusStyles = {
 
 export const StudentCard = ({ student }) => {
   const { detailedMode, logs, can, role } = useClassroom();
+  const { user } = useAuth();
   const [openPositive, setOpenPositive] = useState(false);
   const [openSupport, setOpenSupport] = useState(false);
   const [openQuickLog, setOpenQuickLog] = useState(false);
@@ -161,8 +163,8 @@ export const StudentCard = ({ student }) => {
                       />
                       <div className="flex-1">
                         <span className="text-slate-700 font-medium">{l.tag}</span>
-                        {visibleNote(l, role) && (
-                          <span className="text-slate-500"> — {visibleNote(l, role)}{l.notePrivate ? " (private)" : ""}</span>
+                        {visibleNote(l, role, user?.id) && (
+                          <span className="text-slate-500"> — {visibleNote(l, role, user?.id)}{l.notePrivate ? " (private)" : ""}</span>
                         )}
                       </div>
                     </div>

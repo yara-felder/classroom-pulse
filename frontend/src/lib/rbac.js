@@ -83,5 +83,11 @@ export const canEditStudentRecord = (role, student, viewerId) => {
 
 export const namesHidden = () => false;
 
-// Private reflection notes are visible only to the teacher.
-export const visibleNote = (log, role) => (log.notePrivate && !can(role, "view_private_notes") ? "" : log.note || "");
+// Private reflection notes stay with the person who wrote them.
+export const visibleNote = (log, role, viewerId) => {
+  if (!log?.note) return "";
+  if (!log.notePrivate) return log.note;
+  if (role !== "teacher") return "";
+  if (log.ownerId && viewerId && log.ownerId !== viewerId) return "";
+  return log.note;
+};

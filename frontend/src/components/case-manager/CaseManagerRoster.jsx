@@ -14,6 +14,8 @@ import {
   isOwnStudent,
 } from "@/lib/rbac";
 import { planLabel } from "@/lib/adminRoster";
+import { contextTags, formatLogTime } from "@/data/supportContext";
+import { timeBlockLabel } from "@/lib/schoolAnalytics";
 
 const OUTFIT = { fontFamily: "Outfit" };
 
@@ -49,9 +51,15 @@ export const CaseManagerRoster = () => {
 
   const latestActivity = (studentId) => {
     const recent = logs
-      .filter((log) => log.studentId === studentId && !log.notePrivate && (log.type === "positive" || log.type === "support"))
+      .filter((log) => log.studentId === studentId && (log.type === "positive" || log.type === "support"))
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-    return recent?.tag || "No behavior logged yet";
+    if (!recent) return null;
+    return {
+      time: formatLogTime(recent.timestamp),
+      block: timeBlockLabel(recent.timestamp),
+      tag: recent.tag || "Support",
+      context: contextTags(recent.context),
+    };
   };
 
   return (
@@ -98,6 +106,7 @@ export const CaseManagerRoster = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {caseload.map((student) => {
               const placed = (student.pulloutPeriodIds || []).includes(classSection);
+              const activity = latestActivity(student.id);
               return (
                 <div key={student.id} data-testid={`caseload-card-${student.id}`} className="bg-white border border-slate-200 rounded-2xl p-4">
                   <div className="flex items-start gap-3">
@@ -115,9 +124,21 @@ export const CaseManagerRoster = () => {
                       <Badge className="mt-2 bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px] font-bold" data-testid={`caseload-plan-${student.id}`}>
                         {planLabel(student.iep, student.plan504)}
                       </Badge>
-                      <p className="text-xs text-slate-600 mt-2" data-testid={`caseload-activity-${student.id}`}>
-                        {latestActivity(student.id)}
-                      </p>
+                      <div className="mt-2" data-testid={`caseload-activity-${student.id}`}>
+                        {activity ? (
+                          <>
+                            <p className="text-xs font-semibold text-slate-700">
+                              {activity.time} · {activity.block}
+                            </p>
+                            <p className="text-xs text-slate-600">{activity.tag}</p>
+                            {activity.context.length > 0 && (
+                              <p className="text-xs text-slate-500 mt-0.5">{activity.context.join(" · ")}</p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-xs text-slate-500">No behavior logged yet</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <p className="text-[11px] font-semibold text-slate-500 mt-3" data-testid={`digest-managed-note-${student.id}`}>

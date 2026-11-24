@@ -19,7 +19,7 @@ export const buildDigestSnapshot = ({ student, logs, skills, iepGoals, sentIds, 
     return t >= start && t <= end && t <= now;
   });
   const weekLogs = inWeek.filter((l) => !(sentIds && sentIds.has(l.id)));
-  const queued = weekLogs.filter(isInDigest).map((l) => (l.notePrivate ? { ...l, note: "" } : l));
+  const queued = weekLogs.filter(isInDigest).map((l) => (l.notePrivate ? { ...l, note: "", context: {} } : { ...l, context: {} }));
   const hasPlan = !!(student.iep || student.plan504);
   const mastered = [
     ...(skills || []).filter((sk) => sk.status === "Mastered").map((sk) => ({ id: sk.id, name: sk.name, kind: "Skill" })),

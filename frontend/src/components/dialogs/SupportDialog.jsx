@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, Heart, Mail } from "lucide-react";
+import { AlertTriangle, ChevronDown, Heart, Mail } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useClassroom } from "@/context/ClassroomContext";
 import { SUPPORT_TAGS } from "@/data/mockData";
+import {
+  SUPPORT_CONTEXT_GROUPS,
+  cleanSupportContext,
+  dateFromTimeInput,
+  emptySupportContext,
+  timeInputValue,
+} from "@/data/supportContext";
+import { timeBlockLabel } from "@/lib/schoolAnalytics";
 import { ActionChip } from "@/components/dialogs/ActionChip";
 import { PrivateToggle } from "@/components/dialogs/ReflectionNote";
 
@@ -23,6 +31,11 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
   const [note, setNote] = useState("");
   const [notePrivate, setNotePrivate] = useState(false);
   const [notifyParent, setNotifyParent] = useState(false);
+  const [logTime, setLogTime] = useState(() => timeInputValue());
+  const [contextOpen, setContextOpen] = useState(false);
+  const [context, setContext] = useState(emptySupportContext);
+
+  const hasPlan = !!(student?.iep || student?.plan504);
 
   useEffect(() => {
     if (open) {
@@ -30,8 +43,11 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
       setNote("");
       setNotePrivate(false);
       setNotifyParent(false);
+      setLogTime(timeInputValue());
+      setContextOpen(hasPlan);
+      setContext(emptySupportContext());
     }
-  }, [open]);
+  }, [open, hasPlan]);
 
   const toggle = (id) =>
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -43,7 +59,16 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
       toast.error("Pick at least one support cue.");
       return;
     }
-    selectedTags.forEach((tag) => addSupport(student.id, tag.label, note, { notifyParent, notePrivate }));
+    const when = dateFromTimeInput(logTime);
+    const savedContext = cleanSupportContext(context);
+    selectedTags.forEach((tag) =>
+      addSupport(student.id, tag.label, note, {
+        notifyParent,
+        notePrivate,
+        timestamp: when.toISOString(),
+        context: savedContext,
+      })
+    );
     toast(`Support noted — ${student.name}`, {
       description: `${selectedIds.length} cue${selectedIds.length === 1 ? "" : "s"}${
         notifyParent ? " · queued for parent digest" : ""
@@ -54,6 +79,12 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
   };
 
   const count = selectedIds.length;
+  const when = dateFromTimeInput(logTime);
+  const block = timeBlockLabel(when.toISOString());
+
+  const pickContext = (groupId, option) => {
+    setContext((prev) => ({ ...prev, [groupId]: prev[groupId] === option ? "" : option }));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,14 +93,25 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
         className="sm:max-w-[480px] max-h-[92vh] overflow-y-auto"
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2" style={{ fontFamily: "Outfit" }}>
+          <DialogTitle className="flex flex-wrap items-center gap-2" style={{ fontFamily: "Outfit" }}>
             <span className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
               <AlertTriangle className="w-4 h-4 text-amber-600" />
             </span>
-            Needs Support · {student.name}
+            <span>Needs Support · {student.name}</span>
+            <input
+              type="time"
+              aria-label="Time this happened"
+              data-testid="support-log-time"
+              value={logTime}
+              onChange={(event) => setLogTime(event.target.value)}
+              className="h-8 rounded-lg border border-amber-200 bg-amber-50 px-2 text-sm font-bold text-amber-950"
+            />
+            <span className="text-xs font-semibold text-slate-500" data-testid="support-log-block">
+              {block}
+            </span>
           </DialogTitle>
           <DialogDescription>
-            Tap every cue you noticed. We&apos;ll stack an empathy-first suggestion for each.
+            Tap every cue you noticed. Change the time if you are logging it after class.
           </DialogDescription>
         </DialogHeader>
 
@@ -85,6 +127,50 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
               checkTestid={`support-check-${tag.id}`}
             />
           ))}
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70" data-testid="support-context-section">
+          <button
+            type="button"
+            onClick={() => setContextOpen((open) => !open)}
+            aria-expanded={contextOpen}
+            data-testid="support-context-toggle"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left"
+          >
+            <span className="text-xs font-bold text-slate-700">More context (optional)</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${contextOpen ? "rotate-180" : ""}`} />
+          </button>
+          {contextOpen && (
+            <div className="px-3 pb-3 space-y-3" data-testid="support-context-pills">
+              {SUPPORT_CONTEXT_GROUPS.map((group) => (
+                <div key={group.id}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">{group.label}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.options.map((option) => {
+                      const active = context[group.id] === option;
+                      const slug = option.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => pickContext(group.id, option)}
+                          data-testid={`support-context-${group.id}-${slug}`}
+                          className={`text-xs font-semibold rounded-full border px-2.5 py-1 transition-colors ${
+                            active
+                              ? "bg-slate-700 text-white border-slate-700"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-400"
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {selectedTags.length > 0 && (

@@ -712,6 +712,8 @@ export const ClassroomProvider = ({ children }) => {
       notePrivate: !!(note && notePrivate),
       notifyParent: !!notifyParent,
       includeInDigest: !!notifyParent,
+      ownerId: authUser?.id || null,
+      context: {},
       timestamp: new Date().toISOString(),
       logDate: localCalendarDate(),
     };
@@ -719,7 +721,7 @@ export const ClassroomProvider = ({ children }) => {
     if (persistLive) insertLog(log, ownerId).catch(catchPersist);
   };
 
-  const addSupport = (studentId, tagLabel, note = "", { notifyParent = false, notePrivate = false } = {}) => {
+  const addSupport = (studentId, tagLabel, note = "", { notifyParent = false, notePrivate = false, timestamp, context } = {}) => {
     markChecklist("support");
     setStudents((prev) =>
       prev.map((s) => {
@@ -729,6 +731,8 @@ export const ClassroomProvider = ({ children }) => {
         return next;
       })
     );
+    const when = timestamp ? new Date(timestamp) : new Date();
+    const loggedAt = Number.isNaN(when.getTime()) ? new Date() : when;
     const log = {
       id: nextId("log"),
       studentId,
@@ -738,8 +742,10 @@ export const ClassroomProvider = ({ children }) => {
       notePrivate: !!(note && notePrivate),
       notifyParent: !!notifyParent,
       includeInDigest: !!notifyParent,
-      timestamp: new Date().toISOString(),
-      logDate: localCalendarDate(),
+      ownerId: authUser?.id || null,
+      context: context && typeof context === "object" ? context : {},
+      timestamp: loggedAt.toISOString(),
+      logDate: localCalendarDate(loggedAt),
     };
     setLogs((prev) => [log, ...prev]);
     if (persistLive) insertLog(log, ownerId).catch(catchPersist);
@@ -755,6 +761,8 @@ export const ClassroomProvider = ({ children }) => {
       notePrivate: !!(note && notePrivate),
       notifyParent: !!notifyParent,
       includeInDigest: !!notifyParent,
+      ownerId: authUser?.id || null,
+      context: {},
       timestamp: new Date().toISOString(),
       logDate: localCalendarDate(),
     };

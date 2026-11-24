@@ -32,8 +32,10 @@ export const buildOriginalDraft = (student, snapshot, settings) => {
       ? mastered.map((m) => `• ${m.name} (${m.kind})`).join("\n")
       : "Actively working on core learning goals and daily routines.",
     support: supportNotes.length
-      ? supportNotes.map((n) => `• ${day(n.timestamp)} · ${n.tag}${n.note ? `: ${n.note}` : ""}`).join("\n")
-      : "No support strategies or cues needed to be flagged this week!",
+      ? supportNotes
+          .map((n) => `• ${day(n.timestamp)} · ${n.tag}${n.note && !n.notePrivate ? `: ${n.note}` : ""}`)
+          .join("\n")
+      : `${name} had the support they needed this week. Nothing extra to flag for home.`,
     homeConnection: `Want to chat about the school week? Ask ${name} to share one thing they were proud of working on this week!`,
   };
 };

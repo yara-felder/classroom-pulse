@@ -24,6 +24,10 @@ import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { useClassroom } from "@/context/ClassroomContext";
+import { useAuth } from "@/context/AuthContext";
+import { visibleNote } from "@/lib/rbac";
+import { contextTags, formatLogTime } from "@/data/supportContext";
+import { TODAY_BLOCKS, timeBlockLabel } from "@/lib/schoolAnalytics";
 import { PdfExportDialog } from "@/components/dialogs/PdfExportDialog";
 import { currentWeekdays } from "@/lib/weekDates";
 import { studentDay } from "@/lib/pointCycle";
@@ -44,7 +48,8 @@ const weekRangeLabel = () => {
 };
 
 export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
-  const { skillsByStudent, logs } = useClassroom();
+  const { skillsByStudent, logs, role } = useClassroom();
+  const { user } = useAuth();
   const chartRef = useRef(null);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   if (!student) return null;
@@ -55,6 +60,20 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
   const studentSkills = skillsByStudent[student.id] || [];
   const positiveCount = weekData.reduce((s, d) => s + d.positive, 0);
   const supportCount = weekData.reduce((s, d) => s + d.support, 0);
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 5);
+  const weekSupport = studentLogs
+    .filter((log) => log.type === "support")
+    .filter((log) => {
+      const when = new Date(log.timestamp);
+      return when >= weekStart && when < weekEnd;
+    })
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const blockCounts = Object.fromEntries(TODAY_BLOCKS.map((block) => [block, 0]));
+  weekSupport.forEach((log) => {
+    const block = timeBlockLabel(log.timestamp);
+    blockCounts[block] = (blockCounts[block] || 0) + 1;
+  });
 
   // Build unified itemized log entries: behavior logs + today's skill trials (optionally filtered by date range)
   const buildItemizedLogs = (dateRange) => {
@@ -76,7 +95,7 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
             : l.type === "support"
             ? "Support"
             : "Logged",
-        notes: (l.notePrivate ? "" : l.note) || (l.notifyParent ? "Parent notify queued" : ""),
+        notes: visibleNote(l, role, user?.id) || (l.notifyParent && !l.notePrivate ? "Parent notify queued" : ""),
       });
     });
     // Today's skill trials (only if today falls within range)
@@ -438,6 +457,49 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
                 />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div
+          className="bg-white border border-slate-200 rounded-2xl p-4 mt-4"
+          data-testid={`analytics-support-context-${student.id}`}
+        >
+          <h4 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit" }}>
+            Support across the day
+          </h4>
+          <p className="text-[11px] text-slate-500 mt-0.5">When support happened this week, and what was going on.</p>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            {TODAY_BLOCKS.map((block) => (
+              <div key={block} className="rounded-xl bg-slate-50 px-2 py-2 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{block}</p>
+                <p className="text-lg font-extrabold text-slate-900" style={{ fontFamily: "Fredoka" }}>{blockCounts[block] || 0}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 space-y-2">
+            {weekSupport.length === 0 && (
+              <p className="text-xs text-slate-400">No support logged this week.</p>
+            )}
+            {weekSupport.slice(0, 8).map((log) => {
+              const note = visibleNote(log, role, user?.id);
+              const tags = contextTags(log.context);
+              return (
+                <div key={log.id} className="rounded-xl border border-slate-100 px-3 py-2" data-testid={`analytics-support-log-${log.id}`}>
+                  <p className="text-xs font-semibold text-slate-700">
+                    {formatLogTime(log.timestamp)} · {timeBlockLabel(log.timestamp)}
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900">{log.tag}</p>
+                  {tags.length > 0 && (
+                    <p className="text-xs text-slate-500 mt-0.5">{tags.join(" · ")}</p>
+                  )}
+                  {note && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      {note}{log.notePrivate ? " (private)" : ""}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
