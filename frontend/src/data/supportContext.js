@@ -3,16 +3,22 @@ export const SUPPORT_CONTEXT_GROUPS = [
     id: "activity",
     label: "During what activity?",
     options: ["Whole Class", "Independent Work", "Switching Activities", "Small Group", "Lunch / Recess"],
+    allowOther: true,
+    otherPlaceholder: "Type custom activity...",
   },
   {
     id: "before",
     label: "What happened right before?",
     options: ["Asked to Start Work", "Transition / Stop", "Told \"No\" / Wait", "Peer Issue", "Loud / Busy Room", "Downtime / Waiting"],
+    allowOther: true,
+    otherPlaceholder: "Type what happened...",
   },
   {
     id: "helped",
     label: "What helped?",
     options: ["Reminder / Visual Cue", "Short Break / Calm Tool", "Broke Task Into Steps", "1-on-1 Check-In", "Gave Space"],
+    allowOther: true,
+    otherPlaceholder: "Type what helped...",
   },
   {
     id: "duration",

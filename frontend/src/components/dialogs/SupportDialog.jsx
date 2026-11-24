@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, ChevronDown, Heart, Mail } from "lucide-react";
+import { AlertTriangle, ChevronDown, Heart, Mail, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
   const [logTime, setLogTime] = useState(() => timeInputValue());
   const [contextOpen, setContextOpen] = useState(false);
   const [context, setContext] = useState(emptySupportContext);
+  const [otherOpen, setOtherOpen] = useState({});
 
   const hasPlan = !!(student?.iep || student?.plan504);
 
@@ -46,6 +47,7 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
       setLogTime(timeInputValue());
       setContextOpen(hasPlan);
       setContext(emptySupportContext());
+      setOtherOpen({});
     }
   }, [open, hasPlan]);
 
@@ -83,7 +85,19 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
   const block = timeBlockLabel(when.toISOString());
 
   const pickContext = (groupId, option) => {
+    setOtherOpen((prev) => ({ ...prev, [groupId]: false }));
     setContext((prev) => ({ ...prev, [groupId]: prev[groupId] === option ? "" : option }));
+  };
+
+  const toggleOther = (group) => {
+    setOtherOpen((prev) => {
+      const next = !prev[group.id];
+      setContext((current) => ({
+        ...current,
+        [group.id]: next && !group.options.includes(current[group.id]) ? current[group.id] : "",
+      }));
+      return { ...prev, [group.id]: next };
+    });
   };
 
   return (
@@ -147,7 +161,7 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">{group.label}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {group.options.map((option) => {
-                      const active = context[group.id] === option;
+                      const active = !otherOpen[group.id] && context[group.id] === option;
                       const slug = option.toLowerCase().replace(/[^a-z0-9]+/g, "-");
                       return (
                         <button
@@ -166,7 +180,33 @@ export const SupportDialog = ({ open, onOpenChange, student }) => {
                         </button>
                       );
                     })}
+                    {group.allowOther && (
+                      <button
+                        type="button"
+                        aria-pressed={!!otherOpen[group.id]}
+                        onClick={() => toggleOther(group)}
+                        data-testid={`support-context-${group.id}-other`}
+                        className={`inline-flex items-center gap-0.5 text-xs font-semibold rounded-full border px-2.5 py-1 transition-colors ${
+                          otherOpen[group.id]
+                            ? "bg-slate-700 text-white border-slate-700"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-slate-400"
+                        }`}
+                      >
+                        <Plus className="w-3 h-3" strokeWidth={2.6} /> Other
+                      </button>
+                    )}
                   </div>
+                  {group.allowOther && otherOpen[group.id] && (
+                    <input
+                      type="text"
+                      value={group.options.includes(context[group.id]) ? "" : context[group.id]}
+                      onChange={(event) => setContext((prev) => ({ ...prev, [group.id]: event.target.value }))}
+                      placeholder={group.otherPlaceholder}
+                      aria-label={group.otherPlaceholder}
+                      data-testid={`support-context-${group.id}-other-input`}
+                      className="mt-1.5 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400"
+                    />
+                  )}
                 </div>
               ))}
             </div>
