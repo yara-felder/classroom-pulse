@@ -51,6 +51,7 @@ export const mapStudent = (row) => ({
   guardianEmail: row.guardian_email || "",
   parentDigestEnabled: row.parent_digest_enabled !== false,
   createdAt: row.created_at,
+  ownerId: row.owner_id || null,
 });
 
 export const studentToRow = (s, ownerId) => ({
@@ -229,14 +230,17 @@ export async function upsertProfile(user) {
   throwIf(error);
 }
 
+const uniqueIds = (rows, key) => [...new Set((rows || []).map((row) => row[key]).filter(Boolean))];
+
 export async function loadClassroom(ownerId) {
-  const [students, logs, skills, iep, settings, sends] = await Promise.all([
+  const [students, logs, skills, iep, settings, sends, assignments] = await Promise.all([
     supabase.from("students").select("*").eq("owner_id", ownerId),
     supabase.from("behavior_logs").select("*").eq("owner_id", ownerId).order("timestamp", { ascending: false }),
     supabase.from("skill_goals").select("*").eq("owner_id", ownerId),
     supabase.from("iep_goals").select("*").eq("owner_id", ownerId),
     supabase.from("teacher_settings").select("*").eq("owner_id", ownerId).maybeSingle(),
     supabase.from("digest_sends").select("*").eq("owner_id", ownerId).order("sent_at", { ascending: true }),
+    supabase.from("caseload_assignments").select("student_id").eq("case_manager_id", ownerId),
   ]);
   throwIf(students.error);
   throwIf(logs.error);
@@ -244,12 +248,70 @@ export async function loadClassroom(ownerId) {
   throwIf(iep.error);
   throwIf(settings.error);
   throwIf(sends.error);
+  throwIf(assignments.error);
+
+  const ownedIds = new Set((students.data || []).map((row) => row.id));
+  const assignedIds = uniqueIds(assignments.data, "student_id").filter((id) => !ownedIds.has(id));
+  const placementRes = await supabase
+    .from("pullout_placements")
+    .select("student_id, period_id")
+    .eq("case_manager_id", ownerId);
+  const placements = placementRes.error ? [] : placementRes.data || [];
+  let assignedStudents = [];
+  let assignedLogs = [];
+  let assignedSkills = [];
+  let assignedIep = [];
+  let teacherNames = new Map();
+  if (assignedIds.length > 0) {
+    const [assignedStudentsRes, assignedLogsRes, assignedSkillsRes, assignedIepRes, directoryRes] = await Promise.all([
+      supabase.from("students").select("*").in("id", assignedIds),
+      supabase.from("behavior_logs").select("*").in("student_id", assignedIds).eq("note_private", false).order("timestamp", { ascending: false }),
+      supabase.from("skill_goals").select("*").in("student_id", assignedIds),
+      supabase.from("iep_goals").select("*").in("student_id", assignedIds),
+      supabase.rpc("school_directory"),
+    ]);
+    throwIf(assignedStudentsRes.error);
+    throwIf(assignedLogsRes.error);
+    throwIf(assignedSkillsRes.error);
+    throwIf(assignedIepRes.error);
+    assignedStudents = assignedStudentsRes.data || [];
+    assignedLogs = (assignedLogsRes.data || []).filter((row) => !row.note_private);
+    assignedSkills = assignedSkillsRes.data || [];
+    assignedIep = assignedIepRes.data || [];
+    if (!directoryRes.error) {
+      teacherNames = new Map(
+        (directoryRes.data || []).map((person) => [person.user_id, person.name || person.email || "Classroom teacher"])
+      );
+    }
+  }
+
+  const pulloutByStudent = new Map();
+  placements.forEach((row) => {
+    const current = pulloutByStudent.get(row.student_id) || [];
+    current.push(row.period_id);
+    pulloutByStudent.set(row.student_id, current);
+  });
+
+  const seenLogs = new Set();
+  const mergedLogs = [...(logs.data || []), ...assignedLogs].filter((row) => {
+    if (!row?.id || seenLogs.has(row.id)) return false;
+    seenLogs.add(row.id);
+    return true;
+  });
 
   return {
-    students: (students.data || []).map(mapStudent),
-    logs: (logs.data || []).map(mapLog),
-    skillsByStudent: groupByStudent(skills.data, mapSkill),
-    iepGoalsByStudent: groupByStudent(iep.data, mapIep),
+    students: [
+      ...(students.data || []).map((row) => ({ ...mapStudent(row), assigned: false, pulloutPeriodIds: [] })),
+      ...assignedStudents.map((row) => ({
+        ...mapStudent(row),
+        assigned: true,
+        teacherName: teacherNames.get(row.owner_id) || "Classroom teacher",
+        pulloutPeriodIds: pulloutByStudent.get(row.id) || [],
+      })),
+    ],
+    logs: mergedLogs.map(mapLog),
+    skillsByStudent: groupByStudent([...(skills.data || []), ...assignedSkills], mapSkill),
+    iepGoalsByStudent: groupByStudent([...(iep.data || []), ...assignedIep], mapIep),
     settings: settings.data || null,
     digestSends: (sends.data || []).map(mapSend),
   };
@@ -267,6 +329,24 @@ export async function patchStudents(ownerId, ids, patch) {
 
 export async function deleteStudentRow(id) {
   const { error } = await supabase.from("students").delete().eq("id", id);
+  throwIf(error);
+}
+
+export async function setPulloutPlacement({ caseManagerId, studentId, periodId, include }) {
+  if (include) {
+    const { error } = await supabase.from("pullout_placements").upsert(
+      { case_manager_id: caseManagerId, student_id: studentId, period_id: periodId },
+      { onConflict: "case_manager_id,student_id,period_id" }
+    );
+    throwIf(error);
+    return;
+  }
+  const { error } = await supabase
+    .from("pullout_placements")
+    .delete()
+    .eq("case_manager_id", caseManagerId)
+    .eq("student_id", studentId)
+    .eq("period_id", periodId);
   throwIf(error);
 }
 

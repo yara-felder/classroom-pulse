@@ -8,13 +8,15 @@ import { AddStudentDialog } from "@/components/dialogs/AddStudentDialog";
 import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
 import { EmptyPeriodState } from "@/components/EmptyPeriodState";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
-import { scopeStudents, namesHidden } from "@/lib/rbac";
+import { canEditStudentRecord, namesHidden, visibleClassroomStudents } from "@/lib/rbac";
 import { StudentAvatar } from "@/components/StudentAvatar";
 import { AdminRosterDirectory } from "@/components/admin/AdminRosterDirectory";
+import { CaseManagerWorkspace } from "@/components/case-manager/CaseManagerWorkspace";
 
 export default function RosterPage() {
   const { role } = useClassroom();
   if (role === "admin") return <AdminRosterDirectory />;
+  if (role === "case_manager") return <CaseManagerWorkspace />;
   return <TeacherRosterPage />;
 }
 
@@ -31,12 +33,8 @@ function TeacherRosterPage() {
   }, [user, classSection]);
 
   const periodStudents = useMemo(
-    () =>
-      scopeStudents(role, students, privacySettings).filter((s) => {
-        const ids = s.periodIds && s.periodIds.length > 0 ? s.periodIds : s.periodId ? [s.periodId] : [];
-        return ids.includes(classSection);
-      }),
-    [students, classSection, role, privacySettings]
+    () => visibleClassroomStudents(role, students, classSection, user?.id),
+    [students, classSection, role, user?.id]
   );
 
   const list = periodStudents.filter((s) =>
@@ -159,7 +157,7 @@ function TeacherRosterPage() {
                 {s.points}
               </span>
             </div>
-            {can("edit_student") && (
+            {canEditStudentRecord(role, s, user?.id) && (
             <button
               data-testid={`roster-edit-btn-${s.id}`}
               onClick={() => setEditingStudent(s)}

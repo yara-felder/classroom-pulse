@@ -9,10 +9,13 @@ import { ParentDigestTab } from "@/components/ParentDigestTab";
 import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
 import { FullReportButton } from "@/components/FullReportButton";
 import { useClassroom } from "@/context/ClassroomContext";
+import { useAuth } from "@/context/AuthContext";
+import { canEditStudentRecord } from "@/lib/rbac";
 import { StudentAvatar } from "@/components/StudentAvatar";
 
 export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }) => {
-  const { students, can } = useClassroom();
+  const { students, can, role } = useClassroom();
+  const { user } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [tab, setTab] = useState("overview");
 
@@ -89,7 +92,7 @@ export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }
             </div>
             <div className="shrink-0 flex flex-col sm:flex-row items-end sm:items-center gap-1.5">
             <FullReportButton student={student} ensureOverview={ensureOverview} />
-            {can("edit_student") && (
+            {canEditStudentRecord(role, student, user?.id) && (
             <button
               onClick={() => setEditOpen(true)}
               data-testid={`edit-profile-btn-${student.id}`}

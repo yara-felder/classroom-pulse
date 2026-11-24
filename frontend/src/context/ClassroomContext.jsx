@@ -15,6 +15,7 @@ import {
   upsertStudent,
   patchStudents,
   deleteStudentRow,
+  setPulloutPlacement,
   insertLog,
   localCalendarDate,
   patchLog,
@@ -862,6 +863,8 @@ export const ClassroomProvider = ({ children }) => {
       status: "Connected",
       iep: !!iep,
       plan504: !!plan504,
+      ownerId: authUser?.id || null,
+      assigned: false,
       guardianName: guardianName.trim(),
       guardianEmail: guardianEmail.trim(),
       parentDigestEnabled: !!parentDigestEnabled,
@@ -967,6 +970,24 @@ export const ClassroomProvider = ({ children }) => {
     });
   };
 
+  const setPullout = (studentId, periodId, include) => {
+    setStudents((prev) => {
+      const next = prev.map((student) => {
+        if (student.id !== studentId) return student;
+        const current = student.pulloutPeriodIds || [];
+        const pulloutPeriodIds = include
+          ? [...new Set([...current, periodId])]
+          : current.filter((id) => id !== periodId);
+        return { ...student, pulloutPeriodIds };
+      });
+      studentsRef.current = next;
+      return next;
+    });
+    if (persistLive && authUser?.id) {
+      setPulloutPlacement({ caseManagerId: authUser.id, studentId, periodId, include }).catch(catchPersist);
+    }
+  };
+
   const value = {
     students,
     logs,
@@ -989,6 +1010,7 @@ export const ClassroomProvider = ({ children }) => {
     addStudent,
     updateStudent,
     deleteStudent,
+    setPullout,
     customSkills,
     addCustomSkill,
     iepGoalsByStudent,

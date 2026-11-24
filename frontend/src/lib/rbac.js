@@ -6,7 +6,7 @@ export const ACCESS_ROLES = [
 
 const PERMS = {
   teacher: ["log", "log_trials", "edit_student", "add_student", "edit_goals", "settings", "digest", "reset_points", "view_private_notes", "view_students", "export"],
-  case_manager: ["log_trials", "edit_goals", "view_students", "export"],
+  case_manager: ["log", "log_trials", "edit_goals", "view_students", "export", "add_student", "edit_student"],
   admin: ["view_students", "export"],
 };
 
@@ -16,10 +16,52 @@ export const roleLabel = (role) => (ACCESS_ROLES.find((r) => r.id === role) || A
 
 export const DEFAULT_PRIVACY_SETTINGS = { adminVisibility: "aggregate" };
 
-// Case managers see IEP/504 students. School administrators see the school roster by name.
-export const scopeStudents = (role, students) => {
-  if (role === "case_manager") return students.filter((s) => s.iep || s.plan504);
-  return students;
+export const isAssignedCaseload = (student) =>
+  !!student?.assigned || (!student?.ownerId && !!(student?.iep || student?.plan504));
+
+export const isOwnStudent = (student, viewerId) =>
+  !!viewerId && student?.ownerId === viewerId && !student?.assigned;
+
+export const scopeStudents = (role, students, viewerId) => {
+  if (role !== "case_manager") return students;
+  return students.filter((student) => isAssignedCaseload(student) || isOwnStudent(student, viewerId));
+};
+
+export const periodIdsOf = (student) =>
+  student.periodIds && student.periodIds.length > 0
+    ? student.periodIds
+    : student.periodId
+      ? [student.periodId]
+      : [];
+
+export const ownPeriodStudents = (students, classSection, viewerId) =>
+  students.filter((student) => {
+    if (isOwnStudent(student, viewerId)) return periodIdsOf(student).includes(classSection);
+    if (isAssignedCaseload(student)) return (student.pulloutPeriodIds || []).includes(classSection);
+    return false;
+  });
+
+export const assignedCaseloadStudents = (students) => students.filter((student) => isAssignedCaseload(student));
+
+export const visibleClassroomStudents = (role, students, classSection, viewerId) => {
+  if (role === "case_manager") return ownPeriodStudents(students, classSection, viewerId);
+  return students.filter((student) => periodIdsOf(student).includes(classSection));
+};
+
+export const analyticsStudents = (role, students, classSection, viewerId) => {
+  if (role !== "case_manager") return visibleClassroomStudents(role, students, classSection, viewerId);
+  const seen = new Set();
+  return [...ownPeriodStudents(students, classSection, viewerId), ...assignedCaseloadStudents(students)].filter((student) => {
+    if (seen.has(student.id)) return false;
+    seen.add(student.id);
+    return true;
+  });
+};
+
+export const canEditStudentRecord = (role, student, viewerId) => {
+  if (!can(role, "edit_student")) return false;
+  if (role !== "case_manager") return true;
+  return !student?.assigned && !!viewerId && student?.ownerId === viewerId;
 };
 
 export const namesHidden = () => false;

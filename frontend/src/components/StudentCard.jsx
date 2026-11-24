@@ -24,7 +24,9 @@ export const StudentCard = ({ student }) => {
   const [openProfile, setOpenProfile] = useState(false);
   const [pulse, setPulse] = useState(false);
 
-  const recentLogs = logs.filter((l) => l.studentId === student.id).slice(0, 3);
+  const recentLogs = logs
+    .filter((l) => l.studentId === student.id && !(student.assigned && l.notePrivate))
+    .slice(0, 3);
 
   const triggerPulse = () => {
     setPulse(true);
@@ -89,6 +91,14 @@ export const StudentCard = ({ student }) => {
                   {student.name}
                 </h3>
               </button>
+              {student.grade ? (
+                <p className="text-xs text-slate-500 mt-0.5">{student.grade}</p>
+              ) : null}
+              {student.assigned && (
+                <p className="text-xs text-slate-600" data-testid={`caseload-teacher-${student.id}`}>
+                  {student.teacherName || "Classroom teacher"}
+                </p>
+              )}
               <Badge
                 variant="outline"
                 className={`mt-1 text-[10px] font-semibold ${statusStyles[student.status] || ""}`}
@@ -97,6 +107,7 @@ export const StudentCard = ({ student }) => {
                 <CircleDot className="w-2.5 h-2.5 mr-1" /> {student.status}
               </Badge>
             </div>
+            {!student.assigned && (
             <div
               data-testid={`student-points-badge-${student.id}`}
               className={`flex flex-col items-center justify-center bg-emerald-50 border border-emerald-100 rounded-xl px-2.5 py-1.5 min-w-[52px] ${
@@ -113,6 +124,7 @@ export const StudentCard = ({ student }) => {
                 {student.points}
               </span>
             </div>
+            )}
           </div>
 
           {/* Recent tag */}
@@ -123,7 +135,7 @@ export const StudentCard = ({ student }) => {
           </div>
 
           {/* Detailed mode extra content */}
-          {detailedMode && (
+          {(detailedMode || student.assigned) && (
             <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-slate-500 font-medium">Support flags:</span>
@@ -161,7 +173,7 @@ export const StudentCard = ({ student }) => {
           )}
 
           {/* Actions */}
-          {can("log") && (
+          {can("log") && !(role === "case_manager" && student.assigned) && (
           <div className="mt-4 grid grid-cols-[1fr_1fr_auto] gap-2">
             <button
               data-testid={`positive-btn-${student.id}`}

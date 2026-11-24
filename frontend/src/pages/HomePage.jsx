@@ -9,8 +9,9 @@ import { useAuth } from "@/context/AuthContext";
 import { ClassGoalBanner } from "@/components/ClassGoalBanner";
 import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
-import { scopeStudents, namesHidden } from "@/lib/rbac";
+import { namesHidden, visibleClassroomStudents } from "@/lib/rbac";
 import { AdminDashboard } from "@/components/AdminDashboard";
+import { CaseManagerWorkspace } from "@/components/case-manager/CaseManagerWorkspace";
 
 const FILTERS = [
   { id: "all", label: "All Students" },
@@ -64,12 +65,8 @@ export default function HomePage() {
   }, [user, classSection]);
 
   const periodStudents = useMemo(
-    () =>
-      scopeStudents(role, students, privacySettings).filter((s) => {
-        const ids = s.periodIds && s.periodIds.length > 0 ? s.periodIds : s.periodId ? [s.periodId] : [];
-        return ids.includes(classSection);
-      }),
-    [students, classSection, role, privacySettings]
+    () => visibleClassroomStudents(role, students, classSection, user?.id),
+    [students, classSection, role, user?.id]
   );
 
   const totals = useMemo(() => {
@@ -91,6 +88,7 @@ export default function HomePage() {
   }, [periodStudents, search, filter]);
 
   if (role === "admin") return <AdminDashboard />;
+  if (role === "case_manager") return <CaseManagerWorkspace />;
 
   return (
     <div className="pt-6">
@@ -117,7 +115,7 @@ export default function HomePage() {
           <RestrictedNotice role={role} title="Aggregate-only access" body="Your district limits administrators to class-level analytics. Open the Analytics tab for building-level trends." />
         )}
         {role === "case_manager" && (
-          <RestrictedNotice role={role} title="Your caseload" body="Showing students with IEP or 504 plans. Open a profile to log IEP goal trials." testid="caseload-notice" />
+          <RestrictedNotice role={role} title="Your caseload" body="Your classroom is listed with the IEP and 504 students an administrator assigned to you." testid="caseload-notice" />
         )}
         {can("log") && <GettingStartedCard periodStudents={periodStudents} />}
 

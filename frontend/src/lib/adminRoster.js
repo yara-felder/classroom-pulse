@@ -10,7 +10,7 @@ export const planLabel = (iep, plan504) => {
 export const accessLabel = (teacherName, caseManagers) => {
   const parts = [`${teacherName} (Teacher)`];
   caseManagers.forEach((person) => parts.push(`${person.name} (Case Manager)`));
-  parts.push("School Administrators");
+  parts.push("School Administrator");
   return parts.join(", ");
 };
 

@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { Sparkles, AlertTriangle, TrendingUp, Target, Settings } from "lucide-react";
 import { useClassroom } from "@/context/ClassroomContext";
+import { useAuth } from "@/context/AuthContext";
 import { StudentAnalyticsSheet } from "@/components/StudentAnalyticsSheet";
 import { ClassGoalBanner, useClassGoal } from "@/components/ClassGoalBanner";
 import { CycleHeader } from "@/components/analytics/CycleHeader";
@@ -20,7 +21,7 @@ import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
 import { earliestLogIso, loggedRange, loggedWeekSeries, minWeekOffsetForDate, weekdayBounds } from "@/lib/pointCycle";
 import { WeekNavigator } from "@/components/analytics/WeekNavigator";
 import { buildCelebrations, studentStatusGroup } from "@/lib/celebrations";
-import { namesHidden } from "@/lib/rbac";
+import { namesHidden, analyticsStudents, isAssignedCaseload } from "@/lib/rbac";
 import { AdminBehaviorAnalytics } from "@/components/analytics/AdminBehaviorAnalytics";
 
 const CHART_MARGIN = { top: 6, right: 8, left: 0, bottom: 24 };
@@ -36,6 +37,7 @@ export default function AnalyticsPage() {
 
 function TeacherBehaviorAnalytics({ classroom }) {
   const { students, logs, classSection, skillsByStudent, iepGoalsByStudent, markChecklist, role, privacySettings, can } = classroom;
+  const { user } = useAuth();
   useEffect(() => {
     markChecklist("goal");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mark the checklist step once on first visit
@@ -44,32 +46,33 @@ function TeacherBehaviorAnalytics({ classroom }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // Only include students in the currently-active period so Home, Roster,
-  // and Analytics stay in sync on the exact same slice.
+  // Assigned caseload students stay in the counts. Private logs on those
+  // students stay with the classroom teacher.
   const periodStudents = useMemo(
-    () =>
-      students.filter((s) => {
-        const ids = s.periodIds && s.periodIds.length > 0 ? s.periodIds : s.periodId ? [s.periodId] : [];
-        return ids.includes(classSection);
-      }),
-    [students, classSection]
+    () => analyticsStudents(role, students, classSection, user?.id),
+    [role, students, classSection, user?.id]
   );
-  const named = role === "case_manager" ? periodStudents.filter((s) => s.iep || s.plan504) : periodStudents;
+  const visibleLogs = useMemo(() => {
+    if (role !== "case_manager") return logs;
+    const assignedIds = new Set(students.filter((student) => isAssignedCaseload(student)).map((student) => student.id));
+    return logs.filter((log) => !(assignedIds.has(log.studentId) && log.notePrivate));
+  }, [logs, role, students]);
+  const named = periodStudents;
   const hideNames = namesHidden(role, privacySettings);
 
-  const minWeekOffset = useMemo(() => minWeekOffsetForDate(earliestLogIso(logs)), [logs]);
+  const minWeekOffset = useMemo(() => minWeekOffsetForDate(earliestLogIso(visibleLogs)), [visibleLogs]);
   const week = useMemo(() => weekdayBounds(weekOffset), [weekOffset]);
 
   const stats = useMemo(() => {
-    const { positive, support } = loggedRange(periodStudents, logs, week.start, week.end);
+    const { positive, support } = loggedRange(periodStudents, visibleLogs, week.start, week.end);
     const ratio = positive + support === 0 ? 100 : Math.round((positive / (positive + support)) * 100);
     return { positive, support, ratio };
-  }, [logs, periodStudents, week]);
+  }, [visibleLogs, periodStudents, week]);
 
   const goal = useClassGoal(periodStudents);
   const goalPct = Math.min(100, Math.round((stats.positive / Math.max(1, goal.target)) * 100));
 
-  const trend = useMemo(() => loggedWeekSeries(periodStudents, logs, weekOffset), [logs, periodStudents, weekOffset]);
+  const trend = useMemo(() => loggedWeekSeries(periodStudents, visibleLogs, weekOffset), [visibleLogs, periodStudents, weekOffset]);
 
   const celebrations = useMemo(
     () => buildCelebrations(hideNames ? [] : named, skillsByStudent, iepGoalsByStudent),
@@ -81,11 +84,11 @@ function TeacherBehaviorAnalytics({ classroom }) {
     [...named]
       .sort((a, b) => a.name.localeCompare(b.name))
       .forEach((s) => {
-        const g = studentStatusGroup(s, skillsByStudent[s.id], iepGoalsByStudent[s.id], logs, week);
+        const g = studentStatusGroup(s, skillsByStudent[s.id], iepGoalsByStudent[s.id], visibleLogs, week);
         (out[g] = out[g] || []).push(s);
       });
     return out;
-  }, [named, skillsByStudent, iepGoalsByStudent, logs, week]);
+  }, [named, skillsByStudent, iepGoalsByStudent, visibleLogs, week]);
 
   const openStudent = (s) => {
     setSelectedStudent(s);
