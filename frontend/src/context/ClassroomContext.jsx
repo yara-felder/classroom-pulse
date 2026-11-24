@@ -8,7 +8,7 @@ import { FERPA_NOTICE } from "@/lib/ferpa";
 import { INITIAL_STUDENTS, CLASS_SECTIONS, INITIAL_SKILLS } from "@/data/mockData";
 import { computeMasteryStreak, DEFAULT_MASTERY } from "@/components/goals/mastery";
 import { useAuth } from "@/context/AuthContext";
-import { can as canDo, DEFAULT_PRIVACY_SETTINGS } from "@/lib/rbac";
+import { can as canDo, DEFAULT_PRIVACY_SETTINGS, isOwnStudent } from "@/lib/rbac";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import {
   loadClassroom,
@@ -519,6 +519,7 @@ export const ClassroomProvider = ({ children }) => {
     const sentAt = last.toISOString();
     const auto = students
       .filter((s) => s.parentDigestEnabled !== false && s.guardianEmail)
+      .filter((s) => role !== "case_manager" || isOwnStudent(s, authUser?.id))
       .map((s) => {
         const snap = buildDigestSnapshot({
           student: s,

@@ -11,7 +11,7 @@ import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
 import { namesHidden, visibleClassroomStudents } from "@/lib/rbac";
 import { AdminDashboard } from "@/components/AdminDashboard";
-import { CaseManagerWorkspace } from "@/components/case-manager/CaseManagerWorkspace";
+import { CaseManagerHome } from "@/components/case-manager/CaseManagerHome";
 
 const FILTERS = [
   { id: "all", label: "All Students" },
@@ -88,7 +88,7 @@ export default function HomePage() {
   }, [periodStudents, search, filter]);
 
   if (role === "admin") return <AdminDashboard />;
-  if (role === "case_manager") return <CaseManagerWorkspace />;
+  if (role === "case_manager") return <CaseManagerHome />;
 
   return (
     <div className="pt-6">

@@ -10,11 +10,11 @@ import { EditStudentDialog } from "@/components/dialogs/EditStudentDialog";
 import { FullReportButton } from "@/components/FullReportButton";
 import { useClassroom } from "@/context/ClassroomContext";
 import { useAuth } from "@/context/AuthContext";
-import { canEditStudentRecord } from "@/lib/rbac";
+import { canEditStudentRecord, canManageDigest, isAssignedCaseload } from "@/lib/rbac";
 import { StudentAvatar } from "@/components/StudentAvatar";
 
 export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }) => {
-  const { students, can, role } = useClassroom();
+  const { students, role } = useClassroom();
   const { user } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [tab, setTab] = useState("overview");
@@ -26,6 +26,8 @@ export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }
   if (!student) return null;
 
   const hasPlan = !!(student.iep || student.plan504);
+  const digestAllowed = canManageDigest(role, student, user?.id);
+  const digestManaged = role === "case_manager" && isAssignedCaseload(student);
 
   const ensureOverview = async () => {
     if (tab === "overview") return;
@@ -109,12 +111,12 @@ export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }
         </SheetHeader>
 
         <Tabs value={tab} onValueChange={setTab} className="mt-4">
-          <TabsList className={`grid ${can("digest") ? "grid-cols-2" : "grid-cols-1"} w-full`} data-testid="profile-tabs">
+          <TabsList className={`grid ${digestAllowed ? "grid-cols-2" : "grid-cols-1"} w-full`} data-testid="profile-tabs">
             <TabsTrigger value="overview" data-testid="tab-overview">
               <Target className="w-3.5 h-3.5 mr-1.5" />
               Overview
             </TabsTrigger>
-            {can("digest") && (
+            {digestAllowed && (
             <TabsTrigger value="digest" data-testid="tab-parent-digest">
               <MailIcon className="w-3.5 h-3.5 mr-1.5" />
               Parent Digest
@@ -123,13 +125,20 @@ export const StudentProfileSheet = ({ open, onOpenChange, student: studentProp }
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
+            {digestManaged && (
+              <p className="text-xs font-semibold text-slate-500" data-testid={`digest-managed-note-${student.id}`}>
+                Managed by classroom teacher
+              </p>
+            )}
             {hasPlan && <IepGoalsSection student={student} />}
             <SkillAcquisitionCard studentId={student.id} />
           </TabsContent>
 
+          {digestAllowed && (
           <TabsContent value="digest" className="mt-4">
             <ParentDigestTab student={student} />
           </TabsContent>
+          )}
         </Tabs>
 
         <EditStudentDialog open={editOpen} onOpenChange={setEditOpen} student={student} />

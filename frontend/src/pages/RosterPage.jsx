@@ -11,12 +11,12 @@ import { RestrictedNotice } from "@/components/RestrictedNotice";
 import { canEditStudentRecord, namesHidden, visibleClassroomStudents } from "@/lib/rbac";
 import { StudentAvatar } from "@/components/StudentAvatar";
 import { AdminRosterDirectory } from "@/components/admin/AdminRosterDirectory";
-import { CaseManagerWorkspace } from "@/components/case-manager/CaseManagerWorkspace";
+import { CaseManagerRoster } from "@/components/case-manager/CaseManagerRoster";
 
 export default function RosterPage() {
   const { role } = useClassroom();
   if (role === "admin") return <AdminRosterDirectory />;
-  if (role === "case_manager") return <CaseManagerWorkspace />;
+  if (role === "case_manager") return <CaseManagerRoster />;
   return <TeacherRosterPage />;
 }
 

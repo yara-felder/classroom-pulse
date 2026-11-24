@@ -68,7 +68,8 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
   const setPoint = (k) => (v) => setPointDraft((d) => ({ ...d, [k]: v }));
 
   const isAdmin = role === "admin";
-  const activeTab = isAdmin ? "school" : initialTab;
+  const digestOnly = role === "case_manager";
+  const activeTab = isAdmin ? "school" : digestOnly ? "digest" : initialTab;
 
   const save = () => {
     if (isAdmin) {
@@ -85,6 +86,11 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
       return;
     }
     updateDigestSettings({ day: draft.day, time: draft.time, approvalMode: draft.approvalMode, header: draft.header, footer: draft.footer });
+    if (digestOnly) {
+      toast.success("Settings saved", { description: `Weekly digest: ${scheduleLabel(draft)}` });
+      onOpenChange(false);
+      return;
+    }
     updatePrivacySettings(privacyDraft);
     updatePointSettings({
       cadence: pointDraft.cadence,
@@ -110,35 +116,40 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
               ? focusSection === "caseload"
                 ? "Assign this student to a case manager."
                 : "Invite teachers and case managers into your school."
-              : "Configure how Classroom Pulse works for your classes."}
+              : digestOnly
+                ? "Parent Digests for students in your own periods."
+                : "Configure how Classroom Pulse works for your classes."}
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue={activeTab}>
-          <TabsList className={isAdmin ? "w-fit" : "w-full grid grid-cols-4"}>
+          <TabsList className={isAdmin || digestOnly ? "w-fit" : "w-full grid grid-cols-4"}>
             {!isAdmin && (
               <TabsTrigger value="digest" data-testid="settings-tab-digest">
                 <Mail className="w-4 h-4 mr-1.5" /> Digest
               </TabsTrigger>
             )}
-            {!isAdmin && (
+            {!isAdmin && !digestOnly && (
               <TabsTrigger value="points" data-testid="settings-tab-points">
                 <Coins className="w-4 h-4 mr-1.5" /> Points
               </TabsTrigger>
             )}
-            {!isAdmin && (
+            {!isAdmin && !digestOnly && (
               <TabsTrigger value="privacy" data-testid="settings-tab-privacy">
                 <Lock className="w-4 h-4 mr-1.5" /> Privacy
               </TabsTrigger>
             )}
+            {!digestOnly && (
             <TabsTrigger value="school" data-testid="settings-tab-school">
               <Building2 className="w-4 h-4 mr-1.5" /> School
             </TabsTrigger>
+            )}
           </TabsList>
-          {!isAdmin && (
+          {!isAdmin && !digestOnly && (
             <TabsContent value="privacy" className="mt-4">
               <PrivacySettings />
             </TabsContent>
           )}
+          {!digestOnly && (
           <TabsContent value="school" className="mt-4">
             <SchoolAccessPanel
               role={role}
@@ -147,7 +158,8 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
               initialStudentId={open ? initialStudentId : ""}
             />
           </TabsContent>
-          {!isAdmin && (
+          )}
+          {!isAdmin && !digestOnly && (
           <TabsContent value="points" className="mt-4">
             <PointSystemSettings draft={pointDraft} set={setPoint} />
           </TabsContent>

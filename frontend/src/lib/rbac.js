@@ -6,7 +6,7 @@ export const ACCESS_ROLES = [
 
 const PERMS = {
   teacher: ["log", "log_trials", "edit_student", "add_student", "edit_goals", "settings", "digest", "reset_points", "view_private_notes", "view_students", "export"],
-  case_manager: ["log", "log_trials", "edit_goals", "view_students", "export", "add_student", "edit_student"],
+  case_manager: ["log", "log_trials", "edit_goals", "view_students", "export", "add_student", "edit_student", "digest"],
   admin: ["view_students", "export"],
 };
 
@@ -56,6 +56,19 @@ export const analyticsStudents = (role, students, classSection, viewerId) => {
     seen.add(student.id);
     return true;
   });
+};
+
+export const decorateCaseloadStudent = (student) => {
+  if (!student?.assigned && !student?.ownerId && (student?.iep || student?.plan504)) {
+    return { ...student, assigned: true, teacherName: student.teacherName || "Classroom teacher" };
+  }
+  return student;
+};
+
+export const canManageDigest = (role, student, viewerId) => {
+  if (!can(role, "digest")) return false;
+  if (role !== "case_manager") return true;
+  return isOwnStudent(student, viewerId);
 };
 
 export const canEditStudentRecord = (role, student, viewerId) => {

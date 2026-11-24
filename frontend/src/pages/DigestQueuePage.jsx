@@ -10,6 +10,7 @@ import { buildOriginalDraft, isDraftEdited, mergeDraft } from "@/lib/digestDraft
 import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
 import { format } from "date-fns";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
+import { isOwnStudent } from "@/lib/rbac";
 import { StudentAvatar } from "@/components/StudentAvatar";
 
 const Stat = ({ icon: Icon, tone, value, label }) => (
@@ -121,13 +122,14 @@ export default function DigestQueuePage() {
     const sentIds = new Set(digestSends.flatMap((s) => s.entryIds));
     return students
       .filter((s) => (s.periodIds || []).includes(classSection))
+      .filter((s) => role !== "case_manager" || isOwnStudent(s, user?.id))
       .map((s) => ({
         student: s,
         snap: buildDigestSnapshot({ student: s, logs, skills: skillsByStudent[s.id], iepGoals: iepGoalsByStudent[s.id], sentIds }),
         lastSend: [...digestSends].reverse().find((d) => d.studentId === s.id),
       }))
       .sort((a, b) => b.snap.queued.length - a.snap.queued.length || a.student.name.localeCompare(b.student.name));
-  }, [students, logs, classSection, skillsByStudent, iepGoalsByStudent, digestSends]);
+  }, [students, logs, classSection, skillsByStudent, iepGoalsByStudent, digestSends, role, user?.id]);
 
   if (!can("digest")) {
     return (
@@ -146,7 +148,9 @@ export default function DigestQueuePage() {
           <Mail className="w-7 h-7 text-teal-600" /> Parent Digest Queue
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          This week's parent-tagged entries{periodName ? ` for ${periodName}` : ""}, grouped by student.
+          {role === "case_manager"
+            ? `Parent Digests for students you added${periodName ? ` in ${periodName}` : ""}. Assigned caseload digests stay with the classroom teacher.`
+            : `This week's parent-tagged entries${periodName ? ` for ${periodName}` : ""}, grouped by student.`}
         </p>
       </div>
       <ScheduleBanner settings={digestSettings} totalQueued={totalQueued} onSettings={() => setSettingsOpen(true)} />
