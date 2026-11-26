@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ClassGoalBanner } from "@/components/ClassGoalBanner";
 import { GettingStartedCard } from "@/components/GettingStartedCard";
 import { RestrictedNotice } from "@/components/RestrictedNotice";
+import { logCalendarDate, schoolCalendarDate, schoolNow } from "@/lib/pointCycle";
 import { namesHidden, visibleClassroomStudents } from "@/lib/rbac";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { ManagePeriodsDialog } from "@/components/dialogs/ManagePeriodsDialog";
@@ -72,8 +73,10 @@ export default function HomePage() {
 
   const totals = useMemo(() => {
     const idsInPeriod = new Set(periodStudents.map((s) => s.id));
-    const positive = logs.filter((l) => l.type === "positive" && idsInPeriod.has(l.studentId)).length;
-    const support = logs.filter((l) => l.type === "support" && idsInPeriod.has(l.studentId)).length;
+    const todayKey = schoolCalendarDate(schoolNow());
+    const onToday = (log) => logCalendarDate(log) === todayKey;
+    const positive = logs.filter((l) => l.type === "positive" && idsInPeriod.has(l.studentId) && onToday(l)).length;
+    const support = logs.filter((l) => l.type === "support" && idsInPeriod.has(l.studentId) && onToday(l)).length;
     const totalPoints = periodStudents.reduce((sum, s) => sum + s.points, 0);
     return { positive, support, totalPoints };
   }, [logs, periodStudents]);

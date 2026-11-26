@@ -98,8 +98,6 @@ export const schoolNow = (now = new Date()) => {
   return day ? new Date(`${day}T12:00:00`) : now;
 };
 
-const sameDay = (iso, date) => schoolCalendarDate(iso) === format(date, "yyyy-MM-dd");
-
 export const logCalendarDate = (log) => {
   const occurred = schoolCalendarDate(log?.timestamp);
   if (occurred) return occurred;
@@ -192,13 +190,13 @@ export const loggedRange = (students, logs, start, end) => {
   );
 };
 
-export const studentDay = (studentId, date, logs, since) => {
+export const studentDay = (studentId, date, logs) => {
   if (isWeekend(date) || startOfDay(date) > startOfDay(schoolNow())) return { positive: 0, support: 0 };
-  const base = since && startOfDay(date) <= startOfDay(new Date(since)) ? { positive: 0, support: 0 } : mockDaily(studentId, date);
-  const dayLogs = logs.filter((l) => l.studentId === studentId && sameDay(l.timestamp, date));
+  const key = format(date, "yyyy-MM-dd");
+  const dayLogs = logs.filter((l) => l.studentId === studentId && logCalendarDate(l) === key);
   return {
-    positive: base.positive + dayLogs.filter((l) => l.type === "positive").length,
-    support: base.support + dayLogs.filter((l) => l.type === "support").length,
+    positive: dayLogs.filter((l) => l.type === "positive").length,
+    support: dayLogs.filter((l) => l.type === "support").length,
   };
 };
 

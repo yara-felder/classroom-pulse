@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DEFAULT_DIGEST_SETTINGS, lastScheduledAt } from "@/lib/digestSchedule";
-import { DEFAULT_POINT_SETTINGS, cycleBounds } from "@/lib/pointCycle";
+import { DEFAULT_POINT_SETTINGS, cycleBounds, logCalendarDate, schoolCalendarDate } from "@/lib/pointCycle";
 import { buildDigestSnapshot } from "@/lib/digest";
 import { buildOriginalDraft, mergeDraft, compileDigestHtml, isDraftEdited, DEFAULT_FOOTER } from "@/lib/digestDraft";
 import { FERPA_NOTICE } from "@/lib/ferpa";
@@ -179,12 +179,22 @@ const buildInitialIepGoals = (students) => {
 
 const seedDemoStudents = () => {
   const ps = { ...DEFAULT_POINT_SETTINGS, ...readLS(POINT_SETTINGS_KEY, {}) };
-  const resetThisCycle = ps.lastResetAt && new Date(ps.lastResetAt) >= cycleBounds(ps).start;
-  return INITIAL_STUDENTS.map((s) => ({
-    ...s,
-    lifetimePoints: s.lifetimePoints ?? s.points,
-    points: resetThisCycle ? 0 : s.points,
-  }));
+  const logs = readLS(LOGS_KEY, []);
+  const cycleStart = schoolCalendarDate(cycleBounds(ps).start);
+  const resetStart = ps.lastResetAt ? schoolCalendarDate(ps.lastResetAt) : "";
+  const balanceStart = resetStart && resetStart > cycleStart ? resetStart : cycleStart;
+  return INITIAL_STUDENTS.map((s) => {
+    const positiveLogs = logs.filter((log) => log.studentId === s.id && log.type === "positive");
+    const active = positiveLogs.filter((log) => {
+      const day = logCalendarDate(log);
+      return day && day >= balanceStart;
+    }).length;
+    return {
+      ...s,
+      points: active,
+      lifetimePoints: positiveLogs.length,
+    };
+  });
 };
 
 const localId = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
