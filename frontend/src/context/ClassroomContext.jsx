@@ -8,7 +8,7 @@ import { FERPA_NOTICE } from "@/lib/ferpa";
 import { INITIAL_STUDENTS, CLASS_SECTIONS, INITIAL_SKILLS } from "@/data/mockData";
 import { computeMasteryStreak, DEFAULT_MASTERY } from "@/components/goals/mastery";
 import { useAuth } from "@/context/AuthContext";
-import { can as canDo, DEFAULT_PRIVACY_SETTINGS, isOwnStudent } from "@/lib/rbac";
+import { can as canDo, DEFAULT_PRIVACY_SETTINGS, isAssignedCaseload, isOwnStudent } from "@/lib/rbac";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import {
   loadClassroom,
@@ -16,6 +16,7 @@ import {
   patchStudents,
   deleteStudentRow,
   setPulloutPlacement,
+  deleteLogRow,
   insertLog,
   localCalendarDate,
   patchLog,
@@ -687,7 +688,7 @@ export const ClassroomProvider = ({ children }) => {
     return skill;
   };
 
-  const addPositive = (studentId, skillLabel, { notifyParent = false, note = "", notePrivate = false } = {}) => {
+  const addPositive = (studentId, skillLabel, { notifyParent = false, note = "", notePrivate = false, timestamp } = {}) => {
     markChecklist("positive");
     setStudents((prev) =>
       prev.map((s) => {
@@ -703,6 +704,8 @@ export const ClassroomProvider = ({ children }) => {
         return next;
       })
     );
+    const when = timestamp ? new Date(timestamp) : new Date();
+    const loggedAt = Number.isNaN(when.getTime()) ? new Date() : when;
     const log = {
       id: nextId("log"),
       studentId,
@@ -714,8 +717,8 @@ export const ClassroomProvider = ({ children }) => {
       includeInDigest: !!notifyParent,
       ownerId: authUser?.id || null,
       context: {},
-      timestamp: new Date().toISOString(),
-      logDate: localCalendarDate(),
+      timestamp: loggedAt.toISOString(),
+      logDate: localCalendarDate(loggedAt),
     };
     setLogs((prev) => [log, ...prev]);
     if (persistLive) insertLog(log, ownerId).catch(catchPersist);
@@ -770,9 +773,48 @@ export const ClassroomProvider = ({ children }) => {
     if (persistLive) insertLog(log, ownerId).catch(catchPersist);
   };
 
+  const canChangeLog = (log) => {
+    if (!log) return false;
+    if (log.ownerId && authUser?.id && log.ownerId !== authUser.id) return false;
+    if (role === "case_manager") {
+      const student = students.find((item) => item.id === log.studentId);
+      if (student && isAssignedCaseload(student)) return false;
+    }
+    return true;
+  };
+
   const updateLog = (logId, updates) => {
+    const current = logs.find((item) => item.id === logId);
+    if (!canChangeLog(current)) return;
     setLogs((prev) => prev.map((l) => (l.id === logId ? { ...l, ...updates } : l)));
     if (persistLive) patchLog(logId, updates).catch(catchPersist);
+  };
+
+  const deleteLog = (logId) => {
+    const current = logs.find((item) => item.id === logId);
+    if (!canChangeLog(current)) return;
+    setLogs((prev) => prev.filter((item) => item.id !== logId));
+    setStudents((prev) =>
+      prev.map((student) => {
+        if (student.id !== current.studentId) return student;
+        if (current.type === "positive") {
+          const next = {
+            ...student,
+            points: Math.max(0, (student.points || 0) - 1),
+            lifetimePoints: Math.max(0, (student.lifetimePoints ?? student.points ?? 0) - 1),
+          };
+          if (persistLive) upsertStudent(next, ownerId).catch(catchPersist);
+          return next;
+        }
+        if (current.type === "support") {
+          const next = { ...student, supportCount: Math.max(0, (student.supportCount || 0) - 1) };
+          if (persistLive) upsertStudent(next, ownerId).catch(catchPersist);
+          return next;
+        }
+        return student;
+      })
+    );
+    if (persistLive) deleteLogRow(logId).catch(catchPersist);
   };
 
   const toggleLogDigest = (logId) => {
@@ -1008,6 +1050,7 @@ export const ClassroomProvider = ({ children }) => {
     addSupport,
     addQuickLog,
     updateLog,
+    deleteLog,
     toggleLogDigest,
     skillsByStudent,
     logPrompt,

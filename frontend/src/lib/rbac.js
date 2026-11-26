@@ -87,7 +87,7 @@ export const namesHidden = () => false;
 export const visibleNote = (log, role, viewerId) => {
   if (!log?.note) return "";
   if (!log.notePrivate) return log.note;
-  if (role !== "teacher") return "";
-  if (log.ownerId && viewerId && log.ownerId !== viewerId) return "";
-  return log.note;
+  if (log.ownerId && viewerId && log.ownerId === viewerId) return log.note;
+  if (role === "teacher" && !log.ownerId) return log.note;
+  return "";
 };

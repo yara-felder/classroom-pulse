@@ -366,6 +366,11 @@ export async function insertLog(log, ownerId) {
   throwIf(error);
 }
 
+export async function deleteLogRow(id) {
+  const { error } = await supabase.from("behavior_logs").delete().eq("id", id);
+  throwIf(error);
+}
+
 export async function patchLog(id, updates) {
   const patch = {};
   if ("includeInDigest" in updates) patch.include_in_digest = updates.includeInDigest;

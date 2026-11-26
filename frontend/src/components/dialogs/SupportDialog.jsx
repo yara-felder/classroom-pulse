@@ -60,13 +60,18 @@ export const SupportDialog = ({ open, onOpenChange, student, log = null }) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const selectedTags = SUPPORT_TAGS.filter((t) => selectedIds.includes(t.id));
+  const timeBase = (() => {
+    if (!log?.timestamp) return new Date();
+    const parsed = new Date(log.timestamp);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  })();
 
   const handleSubmit = () => {
     if (selectedIds.length === 0) {
       toast.error("Pick at least one support cue.");
       return;
     }
-    const when = dateFromTimeInput(logTime);
+    const when = dateFromTimeInput(logTime, timeBase);
     const savedContext = cleanSupportContext(context);
     const payload = {
       notifyParent,
@@ -89,7 +94,7 @@ export const SupportDialog = ({ open, onOpenChange, student, log = null }) => {
     } else {
       selectedTags.forEach((tag) => addSupport(student.id, tag.label, note, payload));
     }
-    toast(`Support noted — ${student.name}`, {
+    toast(`${log?.id ? "Support updated" : "Support noted"} — ${student.name}`, {
       description: `${selectedIds.length} cue${selectedIds.length === 1 ? "" : "s"}${
         notifyParent ? " · queued for parent digest" : ""
       }`,
@@ -99,7 +104,7 @@ export const SupportDialog = ({ open, onOpenChange, student, log = null }) => {
   };
 
   const count = selectedIds.length;
-  const when = dateFromTimeInput(logTime);
+  const when = dateFromTimeInput(logTime, timeBase);
   const block = timeBlockLabel(when.toISOString());
 
   const pickContext = (groupId, option) => {

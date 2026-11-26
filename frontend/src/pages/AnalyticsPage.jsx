@@ -23,6 +23,7 @@ import { WeekNavigator } from "@/components/analytics/WeekNavigator";
 import { buildCelebrations, studentStatusGroup } from "@/lib/celebrations";
 import { namesHidden, analyticsStudents, isAssignedCaseload } from "@/lib/rbac";
 import { AdminBehaviorAnalytics } from "@/components/analytics/AdminBehaviorAnalytics";
+import { ActivityLog } from "@/components/analytics/ActivityLog";
 
 const CHART_MARGIN = { top: 6, right: 8, left: 0, bottom: 24 };
 const TOOLTIP_STYLE = { background: "white", border: "1px solid #E2E8F0", borderRadius: 12, fontSize: 12 };
@@ -218,6 +219,8 @@ function TeacherBehaviorAnalytics({ classroom }) {
       </div>
 
       <ProgressDistribution groups={groups} onOpenStudent={openStudent} hideNames={hideNames} />
+
+      <ActivityLog students={periodStudents} />
 
       <StudentAnalyticsSheet
         open={sheetOpen}

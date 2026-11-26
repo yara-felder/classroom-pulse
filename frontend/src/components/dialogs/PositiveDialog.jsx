@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useClassroom } from "@/context/ClassroomContext";
 import { POSITIVE_SKILLS } from "@/data/mockData";
+import { dateFromTimeInput, timeInputValue } from "@/data/supportContext";
 import { ActionChip } from "@/components/dialogs/ActionChip";
 import { ReflectionNote } from "@/components/dialogs/ReflectionNote";
 
@@ -93,24 +94,31 @@ const CustomSkillDialog = ({ open, onOpenChange, onCreated }) => {
   );
 };
 
-export const PositiveDialog = ({ open, onOpenChange, student }) => {
-  const { addPositive, customSkills } = useClassroom();
+export const PositiveDialog = ({ open, onOpenChange, student, log = null }) => {
+  const { addPositive, customSkills, updateLog } = useClassroom();
   const [selected, setSelected] = useState([]);
   const [customOpen, setCustomOpen] = useState(false);
   const [notifyParent, setNotifyParent] = useState(false);
   const [note, setNote] = useState("");
   const [notePrivate, setNotePrivate] = useState(false);
+  const [logTime, setLogTime] = useState(() => timeInputValue());
 
   useEffect(() => {
-    if (open) {
-      setSelected([]);
-      setNotifyParent(false);
-      setNote("");
-      setNotePrivate(false);
-    }
-  }, [open]);
+    if (!open) return;
+    const when = log?.timestamp ? new Date(log.timestamp) : new Date();
+    setSelected(log?.tag ? [log.tag] : []);
+    setNotifyParent(!!(log?.notifyParent || log?.includeInDigest));
+    setNote(log?.note || "");
+    setNotePrivate(!!log?.notePrivate);
+    setLogTime(timeInputValue(Number.isNaN(when.getTime()) ? new Date() : when));
+  }, [open, log]);
 
   const allSkills = useMemo(() => [...POSITIVE_SKILLS, ...customSkills], [customSkills]);
+  const timeBase = (() => {
+    if (!log?.timestamp) return new Date();
+    const parsed = new Date(log.timestamp);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  })();
 
   const toggle = (label) => {
     setSelected((prev) =>
@@ -123,12 +131,36 @@ export const PositiveDialog = ({ open, onOpenChange, student }) => {
       toast.error("Pick at least one skill to log.");
       return;
     }
-    selected.forEach((skill) => addPositive(student.id, skill, { notifyParent, note: note.trim(), notePrivate }));
-    toast.success(`+${selected.length} pts — ${student.name}`, {
-      description:
-        `Logged: ${selected.join(", ")}` + (notifyParent ? " · queued for parent digest" : ""),
-      duration: 2600,
-    });
+    const when = dateFromTimeInput(logTime, timeBase);
+    const payload = {
+      notifyParent,
+      note: note.trim(),
+      notePrivate,
+      timestamp: when.toISOString(),
+    };
+    if (log?.id) {
+      updateLog(log.id, {
+        tag: selected[0],
+        note: payload.note,
+        notePrivate: !!(payload.note && notePrivate),
+        notifyParent: !!notifyParent,
+        includeInDigest: !!notifyParent,
+        timestamp: payload.timestamp,
+        logDate: when.toLocaleDateString("en-CA"),
+      });
+      selected.slice(1).forEach((skill) => addPositive(student.id, skill, payload));
+      toast.success(`Skill updated — ${student.name}`, {
+        description: selected.join(", "),
+        duration: 2600,
+      });
+    } else {
+      selected.forEach((skill) => addPositive(student.id, skill, payload));
+      toast.success(`+${selected.length} pts — ${student.name}`, {
+        description:
+          `Logged: ${selected.join(", ")}` + (notifyParent ? " · queued for parent digest" : ""),
+        duration: 2600,
+      });
+    }
     setSelected([]);
     setNotifyParent(false);
     onOpenChange(false);
@@ -140,19 +172,30 @@ export const PositiveDialog = ({ open, onOpenChange, student }) => {
   };
 
   const count = selected.length;
+  const skills = log?.tag && !allSkills.some((skill) => skill.label === log.tag)
+    ? [{ id: "saved-skill", title: log.tag, action: "", label: log.tag }, ...allSkills]
+    : allSkills;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent data-testid="modal-positive-skill-dialog" className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2" style={{ fontFamily: "Outfit" }}>
+          <DialogTitle className="flex flex-wrap items-center gap-2" style={{ fontFamily: "Outfit" }}>
             <span className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-emerald-600" />
             </span>
-            Positive Skills · {student.name}
+            <span>Positive Skills · {student.name}</span>
+            <input
+              type="time"
+              aria-label="Time this happened"
+              data-testid="positive-log-time"
+              value={logTime}
+              onChange={(event) => setLogTime(event.target.value)}
+              className="h-8 rounded-lg border border-emerald-200 bg-emerald-50 px-2 text-sm font-bold text-emerald-950"
+            />
           </DialogTitle>
           <DialogDescription>
-            Tap every skill you saw. Each one earns +1 point.
+            Tap every skill you saw. Each one earns +1 point. Change the time if you are logging it after class.
           </DialogDescription>
         </DialogHeader>
 
@@ -168,7 +211,7 @@ export const PositiveDialog = ({ open, onOpenChange, student }) => {
 
         {/* Skill grid */}
         <div className="grid grid-cols-2 gap-2 mt-1 max-h-[320px] overflow-y-auto pr-1" data-testid="positive-skills-grid">
-          {allSkills.map((skill) => (
+          {skills.map((skill) => (
             <ActionChip
               key={skill.id}
               item={skill}
@@ -225,6 +268,8 @@ export const PositiveDialog = ({ open, onOpenChange, student }) => {
             <span data-testid="submit-skill-btn-label">
               {count === 0
                 ? "Select at least one skill"
+                : log?.id
+                ? "Save skill"
                 : `Log ${count} Skill${count === 1 ? "" : "s"} (+${count} Pts)`}
             </span>
           </Button>
