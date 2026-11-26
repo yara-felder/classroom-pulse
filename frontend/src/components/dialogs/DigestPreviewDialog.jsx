@@ -83,7 +83,7 @@ const EmailMeta = ({ student, firstName }) => (
   <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 text-[11px] text-slate-600 space-y-0.5">
     <div>
       <span className="font-bold text-slate-500">From:</span>{" "}
-      {process.env.REACT_APP_DIGEST_FROM_EMAIL || "Classroom Pulse"}
+      {process.env.REACT_APP_DIGEST_FROM_EMAIL || "WrenRoom"}
     </div>
     <div data-testid="digest-preview-to">
       <span className="font-bold text-slate-500">To:</span>{" "}

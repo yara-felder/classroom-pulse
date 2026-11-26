@@ -118,7 +118,7 @@ export const AppSettingsDialog = ({ open, onOpenChange, initialTab = "digest", f
                 : "Invite teachers and case managers into your school."
               : digestOnly
                 ? "Parent Digests for students in your own periods."
-                : "Configure how Classroom Pulse works for your classes."}
+                : "Configure how WrenRoom works for your classes."}
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue={activeTab}>

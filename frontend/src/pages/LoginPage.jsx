@@ -165,12 +165,12 @@ export default function LoginPage() {
         <div className="flex items-center justify-center gap-3 mb-6">
           <img
             src={`${process.env.PUBLIC_URL}/logo-mark.png`}
-            alt=""
-            className="w-12 h-12 rounded-2xl object-cover shadow-md"
+            alt="WrenRoom"
+            className="w-12 h-12 object-contain"
           />
           <div>
             <div className="text-lg font-extrabold text-slate-900" style={{ fontFamily: "Outfit" }}>
-              Classroom Pulse
+              WrenRoom
             </div>
             <div className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
               Behavior & Skill Tracking

@@ -191,7 +191,7 @@ export default function SetupProfilePage() {
       return;
     }
     if (accessRole !== "teacher") {
-      toast.success("Profile ready! Welcome to Classroom Pulse.");
+      toast.success("Profile ready! Welcome to WrenRoom.");
       navigate("/", { replace: true });
       return;
     }
@@ -237,8 +237,8 @@ export default function SetupProfilePage() {
           <div className="flex items-center gap-3 min-w-0">
             <img
               src={`${process.env.PUBLIC_URL}/logo-mark.png`}
-              alt=""
-              className="w-10 h-10 rounded-xl object-cover shadow-sm"
+              alt="WrenRoom"
+              className="w-10 h-10 object-contain"
             />
             <div className="min-w-0">
               <div

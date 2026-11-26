@@ -7,12 +7,12 @@ export default function TermsPage() {
     <PublicPage
       testId="terms-page"
       kicker="Effective Date: November 15, 2026"
-      title="Terms of Service for Classroom Pulse"
+      title="Terms of Service for WrenRoom"
     >
       <LegalSection title="1. Who these terms cover">
         <p>
-          These terms are the agreement between you and Classroom Pulse. They apply to educators and
-          to schools using Classroom Pulse, including pilot schools. By creating an account or using
+          These terms are the agreement between you and WrenRoom. They apply to educators and
+          to schools using WrenRoom, including pilot schools. By creating an account or using
           the service, you agree to these terms and to the{" "}
           <Link to="/privacy" className="font-semibold text-teal-700 hover:text-teal-800">
             Privacy Policy
@@ -23,7 +23,7 @@ export default function TermsPage() {
 
       <LegalSection title="2. Authorized school and educator use">
         <p>
-          Classroom Pulse is for schools and their authorized educators: Classroom Teachers, Case
+          WrenRoom is for schools and their authorized educators: Classroom Teachers, Case
           Managers and Specialists, and School Administrators. Use an account only for classroom
           management and positive behavior recognition, and keep your login to yourself.
         </p>
@@ -50,8 +50,8 @@ export default function TermsPage() {
 
       <LegalSection title="4. Intellectual property">
         <p>
-          Classroom Pulse, including the software, name, and logo, belongs to Classroom Pulse. You
-          keep ownership of the classroom content you enter. You give Classroom Pulse a limited
+          WrenRoom, including the software, name, and logo, belongs to WrenRoom. You
+          keep ownership of the classroom content you enter. You give WrenRoom a limited
           permission to host and process that content only so we can provide the service to you and
           your school.
         </p>
@@ -61,7 +61,7 @@ export default function TermsPage() {
         <p>
           During a pilot, the service is provided as it is available. Features may change, and access
           may be paused or end. We will try to tell participating schools before a planned
-          interruption. Keep your own copy of any records your school must retain. Classroom Pulse is
+          interruption. Keep your own copy of any records your school must retain. WrenRoom is
           not your school’s official student information system.
         </p>
       </LegalSection>

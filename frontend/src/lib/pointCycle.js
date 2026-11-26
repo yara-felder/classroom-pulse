@@ -67,18 +67,50 @@ export const mockDaily = (studentId, date) => {
   return { positive: 1 + (h % 5), support };
 };
 
-const sameDay = (iso, date) => format(new Date(iso), "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
+export const SCHOOL_TIME_ZONE = "America/Los_Angeles";
+
+const pad = (value) => String(value).padStart(2, "0");
+
+export const schoolCalendarDate = (value) => {
+  if (value == null || value === "") return "";
+  if (!(value instanceof Date)) {
+    const text = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+    value = new Date(text);
+  }
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: SCHOOL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const part = (type) => parts.find((item) => item.type === type)?.value || "";
+  const year = part("year");
+  const month = part("month");
+  const day = part("day");
+  if (!year || !month || !day) return "";
+  return `${year}-${pad(month)}-${pad(day)}`;
+};
+
+export const schoolNow = (now = new Date()) => {
+  const day = schoolCalendarDate(now);
+  return day ? new Date(`${day}T12:00:00`) : now;
+};
+
+const sameDay = (iso, date) => schoolCalendarDate(iso) === format(date, "yyyy-MM-dd");
 
 export const logCalendarDate = (log) => {
-  if (log?.logDate) return String(log.logDate).slice(0, 10);
-  if (!log?.timestamp) return "";
-  const parsed = new Date(log.timestamp);
-  if (Number.isNaN(parsed.getTime())) return String(log.timestamp).slice(0, 10);
-  return parsed.toLocaleDateString("en-CA");
+  const occurred = schoolCalendarDate(log?.timestamp);
+  if (occurred) return occurred;
+  const created = schoolCalendarDate(log?.createdAt || log?.created_at);
+  if (created) return created;
+  const stored = log?.logDate == null ? "" : String(log.logDate).trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(stored) ? stored.slice(0, 10) : "";
 };
 
 export const countLogsOnDay = (students, logs, date) => {
-  if (isWeekend(date) || startOfDay(date) > startOfDay(new Date())) return { positive: 0, support: 0 };
+  if (isWeekend(date) || startOfDay(date) > startOfDay(schoolNow())) return { positive: 0, support: 0 };
   const key = format(date, "yyyy-MM-dd");
   const ids = new Set(students.map((student) => student.id));
   const dayLogs = logs.filter((log) => ids.has(log.studentId) && logCalendarDate(log) === key);
@@ -88,7 +120,7 @@ export const countLogsOnDay = (students, logs, date) => {
   };
 };
 
-export const weekdayBounds = (weekOffset = 0, now = new Date()) => {
+export const weekdayBounds = (weekOffset = 0, now = schoolNow()) => {
   const monday = addDays(startOfWeek(startOfDay(now), { weekStartsOn: 1 }), weekOffset * 7);
   const friday = addDays(monday, 4);
   return {
@@ -109,7 +141,7 @@ export const earliestLogIso = (logs) => {
   return earliest || null;
 };
 
-export const minWeekOffsetForDate = (isoDate, now = new Date()) => {
+export const minWeekOffsetForDate = (isoDate, now = schoolNow()) => {
   if (!isoDate) return 0;
   const parsed = new Date(`${String(isoDate).slice(0, 10)}T12:00:00`);
   if (Number.isNaN(parsed.getTime())) return 0;
@@ -125,7 +157,7 @@ export const schoolWeekRangeLabel = (start, end) => {
   return `${format(start, "MMM d, yyyy")} – ${format(end, "MMM d, yyyy")}`;
 };
 
-export const schoolWeekOptions = (minWeekOffset = 0, now = new Date()) => {
+export const schoolWeekOptions = (minWeekOffset = 0, now = schoolNow()) => {
   const floor = Math.min(0, minWeekOffset);
   const options = [];
   for (let offset = 0; offset >= floor; offset -= 1) {
@@ -145,7 +177,8 @@ export const loggedWeekSeries = (students, logs, weekOffset = 0) => {
 };
 
 export const loggedRange = (students, logs, start, end) => {
-  const last = end && end < new Date() ? end : new Date();
+  const now = schoolNow();
+  const last = end && startOfDay(end) < startOfDay(now) ? end : now;
   if (startOfDay(start) > startOfDay(last)) return { positive: 0, support: 0 };
   const days = eachDayOfInterval({ start: startOfDay(start), end: startOfDay(last) });
   return days.reduce(
@@ -160,7 +193,7 @@ export const loggedRange = (students, logs, start, end) => {
 };
 
 export const studentDay = (studentId, date, logs, since) => {
-  if (isWeekend(date) || startOfDay(date) > startOfDay(new Date())) return { positive: 0, support: 0 };
+  if (isWeekend(date) || startOfDay(date) > startOfDay(schoolNow())) return { positive: 0, support: 0 };
   const base = since && startOfDay(date) <= startOfDay(new Date(since)) ? { positive: 0, support: 0 } : mockDaily(studentId, date);
   const dayLogs = logs.filter((l) => l.studentId === studentId && sameDay(l.timestamp, date));
   return {
@@ -170,7 +203,8 @@ export const studentDay = (studentId, date, logs, since) => {
 };
 
 export const sumRange = (students, logs, start, end) => {
-  const last = end && end < new Date() ? end : new Date();
+  const now = schoolNow();
+  const last = end && startOfDay(end) < startOfDay(now) ? end : now;
   if (startOfDay(start) > startOfDay(last)) return { positive: 0, support: 0 };
   const days = eachDayOfInterval({ start: startOfDay(start), end: startOfDay(last) });
   return students.reduce(

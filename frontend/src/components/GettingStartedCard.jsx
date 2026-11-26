@@ -119,7 +119,7 @@ export const GettingStartedCard = ({ periodStudents }) => {
           <Rocket className="w-4 h-4" />
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit" }}>Welcome to Classroom Pulse</p>
+          <p className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit" }}>Welcome to WrenRoom</p>
           <div className="flex items-center gap-2 mt-1">
             <div className="h-1.5 w-28 rounded-full bg-teal-100 overflow-hidden">
               <div className="h-full bg-teal-500 transition-[width] duration-500" style={{ width: `${pct}%` }} />

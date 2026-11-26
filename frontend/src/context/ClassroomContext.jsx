@@ -334,9 +334,9 @@ export const ClassroomProvider = ({ children }) => {
   }, [authReady, authUser?.id, authUser?.isDemo]);
 
   useEffect(() => {
-    if (persistLive) return;
+    if (persistLive || !hydrated) return;
     localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
-  }, [logs, persistLive]);
+  }, [logs, persistLive, hydrated]);
 
   useEffect(() => {
     if (persistLive) return;

@@ -21,7 +21,7 @@ import { AppSettingsDialog } from "@/components/dialogs/AppSettingsDialog";
 import { earliestLogIso, loggedRange, loggedWeekSeries, minWeekOffsetForDate, weekdayBounds } from "@/lib/pointCycle";
 import { WeekNavigator } from "@/components/analytics/WeekNavigator";
 import { buildCelebrations, studentStatusGroup } from "@/lib/celebrations";
-import { namesHidden, analyticsStudents, isAssignedCaseload } from "@/lib/rbac";
+import { namesHidden, analyticsStudents, isPrivateFromOtherStaff } from "@/lib/rbac";
 import { AdminBehaviorAnalytics } from "@/components/analytics/AdminBehaviorAnalytics";
 import { ActivityLog } from "@/components/analytics/ActivityLog";
 
@@ -47,17 +47,16 @@ function TeacherBehaviorAnalytics({ classroom }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // Assigned caseload students stay in the counts. Private logs on those
-  // students stay with the classroom teacher.
   const periodStudents = useMemo(
     () => analyticsStudents(role, students, classSection, user?.id),
     [role, students, classSection, user?.id]
   );
   const visibleLogs = useMemo(() => {
-    if (role !== "case_manager") return logs;
-    const assignedIds = new Set(students.filter((student) => isAssignedCaseload(student)).map((student) => student.id));
-    return logs.filter((log) => !(assignedIds.has(log.studentId) && log.notePrivate));
-  }, [logs, role, students]);
+    const allowed = new Set(periodStudents.map((student) => student.id));
+    return logs.filter(
+      (log) => allowed.has(log.studentId) && !isPrivateFromOtherStaff(log, user?.id, role)
+    );
+  }, [logs, periodStudents, role, user?.id]);
   const named = periodStudents;
   const hideNames = namesHidden(role, privacySettings);
 

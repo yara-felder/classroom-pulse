@@ -86,8 +86,8 @@ export const TopBar = () => {
         <div data-testid="school-logo-brand" className="flex items-center gap-2.5 shrink-0">
           <img
             src={`${process.env.PUBLIC_URL}/logo-mark.png`}
-            alt=""
-            className="w-10 h-10 rounded-xl object-cover shadow-sm"
+            alt="WrenRoom"
+            className="w-10 h-10 object-contain"
           />
           <div className="hidden sm:flex flex-col leading-tight">
             <span
@@ -98,7 +98,7 @@ export const TopBar = () => {
               {user?.schoolName || "Oakridge Elementary"}
             </span>
             <span className="text-[11px] text-slate-500 font-medium tracking-wide uppercase">
-              Classroom Pulse
+              WrenRoom
             </span>
           </div>
         </div>

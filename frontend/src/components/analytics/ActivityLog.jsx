@@ -16,9 +16,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { contextTags, formatLogTime } from "@/data/supportContext";
-import { localCalendarDate } from "@/lib/db";
-import { logCalendarDate, weekdayBounds } from "@/lib/pointCycle";
-import { isAssignedCaseload, visibleNote } from "@/lib/rbac";
+import { logCalendarDate, schoolCalendarDate, weekdayBounds } from "@/lib/pointCycle";
+import { isAssignedCaseload, isPrivateFromOtherStaff, visibleNote } from "@/lib/rbac";
 import { timeBlockLabel } from "@/lib/schoolAnalytics";
 
 const TYPE_FILTERS = [
@@ -65,16 +64,12 @@ export const ActivityLog = ({ students }) => {
   const studentOptions = roster.filter((student) => !search || student.name.toLowerCase().includes(search));
 
   const rows = useMemo(() => {
-    const today = localCalendarDate();
+    const today = schoolCalendarDate(new Date());
     const week = weekdayBounds(0);
     return logs
       .filter((log) => log.type === "positive" || log.type === "support")
       .filter((log) => byId.has(log.studentId))
-      .filter((log) => {
-        const student = byId.get(log.studentId);
-        if (role === "case_manager" && isAssignedCaseload(student) && log.notePrivate) return false;
-        return true;
-      })
+      .filter((log) => !isPrivateFromOtherStaff(log, user?.id, role))
       .filter((log) => typeFilter === "all" || log.type === typeFilter)
       .filter((log) => studentId === "all" || log.studentId === studentId)
       .filter((log) => {
@@ -88,7 +83,7 @@ export const ActivityLog = ({ students }) => {
         return day >= week.startIso && day <= week.endIso;
       })
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }, [logs, byId, role, typeFilter, studentId, search, rangeFilter]);
+  }, [logs, byId, role, user?.id, typeFilter, studentId, search, rangeFilter]);
 
   const editingStudent = editingLog ? byId.get(editingLog.studentId) : null;
   const ownsLog = (log, student) => {

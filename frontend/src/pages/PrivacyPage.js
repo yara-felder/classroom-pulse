@@ -6,12 +6,12 @@ export default function PrivacyPage() {
     <PublicPage
       testId="privacy-page"
       kicker="Effective Date: November 15, 2026"
-      title="Privacy Policy for Classroom Pulse"
+      title="Privacy Policy for WrenRoom"
     >
       <LegalSection title="1. Overview and role">
         <p>
-          Classroom Pulse is a classroom management and positive behavior recognition platform
-          operated independently for K–12 educators. When a school or district uses Classroom Pulse,
+          WrenRoom is a classroom management and positive behavior recognition platform
+          operated independently for K–12 educators. When a school or district uses WrenRoom,
           we act as a School Official. We process student data strictly on behalf of and under the
           direction of the school, in line with the Family Educational Rights and Privacy Act (FERPA)
           and the Children’s Online Privacy Protection Act (COPPA).
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="3. Role-based access and legitimate educational interest">
         <p>
-          Classroom Pulse limits student records by role. Access is enforced with role-based access
+          WrenRoom limits student records by role. Access is enforced with role-based access
           controls aligned with FERPA’s School Official exception and legitimate educational interest
           standard, so staff see only the records their educational duties require.
         </p>
@@ -74,7 +74,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="4. How we use and share data">
         <p>
-          We use this information solely to operate and improve Classroom Pulse for teachers, schools,
+          We use this information solely to operate and improve WrenRoom for teachers, schools,
           and families. We do not sell personal or student data. We do not use it for targeted
           advertising. We do not share it with third-party data brokers or with generalized AI
           training models.

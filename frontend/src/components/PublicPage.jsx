@@ -31,12 +31,12 @@ export const PublicPage = ({ title, kicker, testId, children }) => (
       <Link to="/login" className="flex items-center gap-3 mb-6 w-fit">
         <img
           src={`${process.env.PUBLIC_URL}/logo-mark.png`}
-          alt=""
-          className="w-11 h-11 rounded-2xl object-cover shadow-md"
+          alt="WrenRoom"
+          className="w-11 h-11 object-contain"
         />
         <div>
           <div className="text-lg font-extrabold text-slate-900" style={{ fontFamily: "Outfit" }}>
-            Classroom Pulse
+            WrenRoom
           </div>
           <div className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
             Behavior & Skill Tracking

@@ -86,6 +86,7 @@ export const mapLog = (row) => ({
   notifyParent: !!row.notify_parent,
   includeInDigest: row.include_in_digest ?? !!row.notify_parent,
   timestamp: row.timestamp,
+  createdAt: row.created_at || null,
   logDate: row.log_date || null,
   ownerId: row.owner_id || null,
   context: row.context && typeof row.context === "object" && !Array.isArray(row.context) ? row.context : {},
@@ -278,15 +279,30 @@ export async function loadClassroom(ownerId) {
     throwIf(assignedSkillsRes.error);
     throwIf(assignedIepRes.error);
     assignedStudents = assignedStudentsRes.data || [];
+    const allowed = new Set(assignedIds);
+    const mergedAssignedLogs = new Map();
+    (assignedLogsRes.data || []).forEach((row) => {
+      if (row?.id && !row.note_private && allowed.has(row.student_id)) mergedAssignedLogs.set(row.id, row);
+    });
     const contextRes = await supabase.rpc("caseload_support_context");
     if (!contextRes.error && Array.isArray(contextRes.data)) {
-      const allowed = new Set(assignedIds);
-      assignedLogs = contextRes.data
-        .filter((row) => allowed.has(row.student_id))
-        .map((row) => ({ ...row, note: "", note_private: false }));
-    } else {
-      assignedLogs = (assignedLogsRes.data || []).filter((row) => !row.note_private);
+      contextRes.data.forEach((row) => {
+        if (!row?.id || row.note_private || !allowed.has(row.student_id)) return;
+        const existing = mergedAssignedLogs.get(row.id);
+        if (!existing) {
+          mergedAssignedLogs.set(row.id, { ...row, note: "", note_private: false });
+          return;
+        }
+        mergedAssignedLogs.set(row.id, {
+          ...existing,
+          context: existing.context && Object.keys(existing.context).length ? existing.context : row.context || existing.context,
+          timestamp: existing.timestamp || row.timestamp,
+          created_at: existing.created_at || row.created_at || null,
+          log_date: existing.log_date || row.log_date,
+        });
+      });
     }
+    assignedLogs = [...mergedAssignedLogs.values()];
     assignedSkills = assignedSkillsRes.data || [];
     assignedIep = assignedIepRes.data || [];
     if (!directoryRes.error) {

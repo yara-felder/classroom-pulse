@@ -103,7 +103,7 @@ export default function HomePage() {
               className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900"
               style={OUTFIT}
             >
-              Today&apos;s classroom pulse
+              Today&apos;s room overview
             </h1>
             <p className="text-sm text-slate-500 mt-1">
               Tap a card to celebrate, support, or log a moment — in seconds.

@@ -318,7 +318,7 @@ export const StudentAnalyticsSheet = ({ open, onOpenChange, student }) => {
       doc.setFontSize(9);
       doc.setTextColor(120);
       doc.text(
-        `Classroom Pulse · Confidential student record · ${student.name}`,
+        `WrenRoom · Confidential student record · ${student.name}`,
         margin,
         pageHeight - 20
       );

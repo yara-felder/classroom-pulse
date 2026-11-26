@@ -83,6 +83,14 @@ export const canEditStudentRecord = (role, student, viewerId) => {
 
 export const namesHidden = () => false;
 
+// Private reflections written by someone else stay off shared analytics.
+export const isPrivateFromOtherStaff = (log, viewerId, role) => {
+  if (!log?.notePrivate) return false;
+  if (viewerId && log.ownerId && log.ownerId === viewerId) return false;
+  if (role === "teacher" && !log.ownerId) return false;
+  return true;
+};
+
 // Private reflection notes stay with the person who wrote them.
 export const visibleNote = (log, role, viewerId) => {
   if (!log?.note) return "";

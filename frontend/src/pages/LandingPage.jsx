@@ -23,20 +23,17 @@ export default function LandingPage() {
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-10 flex items-center">
         <div className="w-full bg-white border border-slate-200 rounded-3xl shadow-sm p-6 sm:p-10">
           <div className="flex items-center gap-4">
-            <span className="relative inline-block w-16 h-16 shrink-0 overflow-hidden rounded-[22%]">
-              <img
-                src={`${process.env.PUBLIC_URL}/logo-mark.png`}
-                alt=""
-                className="absolute max-w-none"
-                style={{ width: "121.6%", height: "121.6%", left: "-9.74%", top: "-5.23%" }}
-              />
-            </span>
+            <img
+              src={`${process.env.PUBLIC_URL}/logo-mark.png`}
+              alt="WrenRoom"
+              className="w-16 h-16 shrink-0 object-contain"
+            />
             <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900" style={{ fontFamily: "Outfit" }}>
-              Classroom Pulse
+              WrenRoom
             </h1>
           </div>
           <p className="mt-4 text-base text-slate-600 leading-relaxed" data-testid="landing-overview">
-            Classroom Pulse helps teachers, case managers, and school administrators connect with
+            WrenRoom helps teachers, case managers, and school administrators connect with
             students, track classroom behavior, monitor progress, and keep parents informed.
           </p>
 

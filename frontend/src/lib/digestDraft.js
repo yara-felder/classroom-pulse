@@ -24,7 +24,7 @@ export const buildOriginalDraft = (student, snapshot, settings) => {
     personalNote: "",
     intro:
       settings.header ||
-      `Here is your weekly Classroom Pulse update for ${name}! We use this tool to share real-time skill growth, celebrate wins, and keep home-to-school communication transparent.`,
+      `Here is your weekly WrenRoom update for ${name}! We use this tool to share real-time skill growth, celebrate wins, and keep home-to-school communication transparent.`,
     celebrations: wins.length
       ? wins.map((w) => `• ${day(w.timestamp)}: ${w.tag}${w.note ? `: ${w.note}` : ""}`).join("\n")
       : `${name} had a steady week! Specific celebration notes will appear here as they are logged.`,
