@@ -91,8 +91,8 @@ export default function PrivacyPage() {
           Data is encrypted in transit with TLS and encrypted at rest. Teachers and school
           administrators can export or permanently delete classroom and student records at any time.
           To delete an entire account and its data, email{" "}
-          <a href="mailto:support@classroompulse.net" className="font-semibold text-teal-700 hover:text-teal-800">
-            support@classroompulse.net
+          <a href="mailto:support@wrenroom.org" className="font-semibold text-teal-700 hover:text-teal-800">
+            support@wrenroom.org
           </a>
           .
         </p>
@@ -101,8 +101,8 @@ export default function PrivacyPage() {
       <LegalSection title="6. Contact">
         <p>
           Questions about this policy can go to{" "}
-          <a href="mailto:support@classroompulse.net" className="font-semibold text-teal-700 hover:text-teal-800">
-            support@classroompulse.net
+          <a href="mailto:support@wrenroom.org" className="font-semibold text-teal-700 hover:text-teal-800">
+            support@wrenroom.org
           </a>
           .
         </p>

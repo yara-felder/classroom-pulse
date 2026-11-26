@@ -69,8 +69,8 @@ export default function TermsPage() {
       <LegalSection title="6. Contact">
         <p>
           Questions about these terms can go to{" "}
-          <a href="mailto:support@classroompulse.net" className="font-semibold text-teal-700 hover:text-teal-800">
-            support@classroompulse.net
+          <a href="mailto:support@wrenroom.org" className="font-semibold text-teal-700 hover:text-teal-800">
+            support@wrenroom.org
           </a>
           .
         </p>
