@@ -5,15 +5,15 @@ import { ArrowRight } from "lucide-react";
 const POINTS = [
   {
     title: "Classroom Teachers",
-    body: "Quickly track daily behavior, positive points, and student progress in seconds.",
+    body: "Notice a moment, mark a skill, and see the week take shape.",
   },
   {
     title: "Case Managers & Specialists",
-    body: "Monitor IEP goals, spot trends across classes, and keep student notes organized.",
+    body: "Follow IEP goals, see patterns across classes, and keep notes in one place.",
   },
   {
-    title: "School Administrators & Families",
-    body: "View school-wide trends, support teachers, and share clear updates with families.",
+    title: "School Administrators",
+    body: "See how the school is doing, and support the teachers in each room.",
   },
 ];
 
@@ -33,8 +33,7 @@ export default function LandingPage() {
             </h1>
           </div>
           <p className="mt-4 text-base text-slate-600 leading-relaxed" data-testid="landing-overview">
-            WrenRoom helps teachers, case managers, and school administrators connect with
-            students, track classroom behavior, monitor progress, and keep parents informed.
+            WrenRoom helps teachers notice students, mark the moments that matter, and keep families in the loop.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
