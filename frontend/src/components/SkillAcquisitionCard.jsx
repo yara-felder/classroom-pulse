@@ -201,7 +201,7 @@ const SkillRow = ({ skill, studentId, student, onMastery }) => {
   const handleExportPdf = async () => {
     const filename = pdfFilename(student?.name, skill.name);
     await generateGoalReportPDF({
-      reportTitle: "Skill Acquisition Report",
+      reportTitle: "Skill progress",
       goalName: skill.name,
       student,
       summaryLines: skillSummaryLines(skill),

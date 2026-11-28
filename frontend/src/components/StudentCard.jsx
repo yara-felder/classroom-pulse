@@ -57,42 +57,38 @@ export const StudentCard = ({ student }) => {
 
         <div className="p-5">
           <div className="flex items-start gap-3">
-            <div className="relative">
-              <StudentAvatar name={student.name} id={student.id} size="lg" className="ring-2 ring-white" />
-              <div className="absolute -bottom-1 -right-1 flex flex-col items-end gap-0.5">
-                {student.iep && (
-                  <span
-                    data-testid={`iep-badge-${student.id}`}
-                    className="bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm"
-                    title="IEP"
-                  >
-                    IEP
-                  </span>
-                )}
-                {student.plan504 && (
-                  <span
-                    data-testid={`plan504-badge-${student.id}`}
-                    className="bg-teal-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm"
-                    title="504"
-                  >
-                    504
-                  </span>
-                )}
-              </div>
-            </div>
+            <StudentAvatar name={student.name} id={student.id} size="lg" className="ring-2 ring-white" />
             <div className="flex-1 min-w-0">
               <button
                 data-testid={`student-detail-trigger-${student.id}`}
                 onClick={() => setOpenProfile(true)}
                 className="text-left w-full"
               >
-                <h3
-                  className="text-[15px] font-bold text-slate-900 truncate hover:text-teal-700 transition-colors"
-                  style={{ fontFamily: "Outfit" }}
-                  data-testid={`student-name-${student.id}`}
-                >
-                  {student.name}
-                </h3>
+                <span className="flex items-center gap-2 min-w-0">
+                  <h3
+                    className="text-[15px] font-bold text-slate-900 truncate hover:text-teal-700 transition-colors"
+                    style={{ fontFamily: "Outfit" }}
+                    data-testid={`student-name-${student.id}`}
+                  >
+                    {student.name}
+                  </h3>
+                  {student.iep && (
+                    <Badge
+                      data-testid={`iep-badge-${student.id}`}
+                      className="shrink-0 bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px] font-bold"
+                    >
+                      IEP
+                    </Badge>
+                  )}
+                  {student.plan504 && (
+                    <Badge
+                      data-testid={`plan504-badge-${student.id}`}
+                      className="shrink-0 bg-teal-100 text-teal-800 border-teal-200 text-[10px] font-bold"
+                    >
+                      504
+                    </Badge>
+                  )}
+                </span>
               </button>
               {student.grade ? (
                 <p className="text-xs text-slate-500 mt-0.5">{student.grade}</p>

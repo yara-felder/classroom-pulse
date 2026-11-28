@@ -67,7 +67,7 @@ const IepGoalCard = ({ studentId, student, goal }) => {
   const handleExportPdf = async () => {
     const filename = pdfFilename(student?.name, `${goal.planType || "IEP"}_${goal.description}`);
     await generateGoalReportPDF({
-      reportTitle: `${goal.planType || "IEP"} Goal Progress Report`,
+      reportTitle: `${goal.planType || "IEP"} goal progress`,
       goalName: goal.description,
       student,
       summaryLines: iepSummaryLines(goal),

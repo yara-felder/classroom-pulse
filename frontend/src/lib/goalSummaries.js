@@ -47,8 +47,8 @@ export const deriveIepStatus = (goal) => {
 const scoreLine = (trials) => {
   const t = todayStats(trials);
   return t.score == null
-    ? "Today's Score: —% (0 Trials)"
-    : `Today's Score: ${t.score}% (${t.ind}/${t.attempted} Trials)`;
+    ? "No trials logged today"
+    : `Today: ${t.score}% independent (${t.ind} of ${t.attempted})`;
 };
 
 const masteryLine = (item) => {
@@ -56,24 +56,30 @@ const masteryLine = (item) => {
   return `Mastery: ${m.percent}% independent over ${dayWord(m.days)} (${shown} of ${m.days} met)`;
 };
 
+const markedToday = (trials) => lastTrialLabel(trials);
+
 export const skillSummaryLines = (skill) => [
   scoreLine(skill.trials),
-  `Monthly Average: ${monthlyAverage(skill.history)}%   ·   Baseline: ${skill.baseline ?? 0}%`,
+  `Recent average: ${monthlyAverage(skill.history)}%   ·   Baseline: ${skill.baseline ?? 0}%`,
   `Target: ${skill.targetPercent ?? 100}% by ${longDate(skill.targetDate)}`,
   masteryLine(skill),
-  `Status: ${skill.status}   ·   Last trial: ${lastTrialLabel(skill.trials) || skill.lastPrompt || "—"}`,
-  trialsLine(skill.trials),
-];
+  `Status: ${skill.status}`,
+  markedToday(skill.trials) ? `Last mark today: ${markedToday(skill.trials)}` : null,
+  (skill.trials || []).some(Boolean) ? trialsLine(skill.trials) : null,
+].filter(Boolean);
 
 export const iepSummaryLines = (goal) => [
   `Plan: ${goal.planType || "IEP"}   ·   Domain: ${goal.domain || "—"}`,
+  goal.reviewDate ? `Review: ${longDate(goal.reviewDate)}` : null,
+  (goal.accommodations || []).length ? `Accommodations: ${goal.accommodations.join(", ")}` : null,
   scoreLine(goal.trials),
-  `Monthly Average: ${monthlyAverage(goal.history)}%   ·   Baseline: ${goal.baseline ?? 0}%`,
+  `Recent average: ${monthlyAverage(goal.history)}%   ·   Baseline: ${goal.baseline ?? 0}%`,
   `Target: ${goal.targetPercent ?? 100}% by ${longDate(goal.targetDate)}`,
   masteryLine(goal),
-  `Status: ${deriveIepStatus(goal)}   ·   Last trial: ${lastTrialLabel(goal.trials) || "—"}`,
-  trialsLine(goal.trials),
-];
+  `Status: ${deriveIepStatus(goal)}`,
+  markedToday(goal.trials) ? `Last mark today: ${markedToday(goal.trials)}` : null,
+  (goal.trials || []).some(Boolean) ? trialsLine(goal.trials) : null,
+].filter(Boolean);
 
 export const overviewRow = (item, type, status) => {
   const t = todayStats(item.trials);
@@ -84,6 +90,6 @@ export const overviewRow = (item, type, status) => {
     status,
     today: t.score == null ? "—" : `${t.score}%`,
     avg: `${monthlyAverage(item.history)}%`,
-    mastery: `${shown}/${m.days} @ ${m.percent}%`,
+    mastery: `${shown} of ${m.days}`,
   };
 };
