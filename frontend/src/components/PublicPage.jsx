@@ -39,7 +39,7 @@ export const PublicPage = ({ title, kicker, testId, children }) => (
             WrenRoom
           </div>
           <div className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
-            Behavior & Skill Tracking
+            For teachers who notice
           </div>
         </div>
       </Link>
